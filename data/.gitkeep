@@ -1,0 +1,2 @@
+# Data Directory
+This folder stores the SQLite database file (`database.sqlite`).

@@ -1,0 +1,30 @@
+{
+  "name": "vender-supplier",
+  "version": "1.0.0",
+  "description": "Vendor / Supplier Reliability Scorecard - Private B2B Intelligence Network for Pakistani Small Traders",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "test": "node -e \"console.log('No tests configured')\""
+  },
+  "keywords": [
+    "supplier-reliability",
+    "scorecard",
+    "pakistan-sme",
+    "b2b-intelligence",
+    "b2b"
+  ],
+  "author": "ZiriumAI",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.0.3",
+    "connect-mongo": "^6.0.0",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "mongoose": "^9.9.4"
+  }
+}

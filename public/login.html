@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Scorecard - Vendor & Supplier Reliability</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+  <div class="auth-wrapper">
+    <div class="auth-card">
+      <div class="auth-header">
+        <div class="logo-badge">
+          <i class="fa-solid fa-clipboard-check" style="color: var(--text-primary); font-size: 1.35rem;"></i>
+        </div>
+        <h1>Supplier Reliability Scorecard</h1>
+        <p>Private B2B Intelligence Network for Pakistani Small Traders</p>
+      </div>
+
+      <div class="auth-tabs">
+        <button type="button" class="auth-tab-btn active" id="tab-btn-login">Sign In</button>
+        <button type="button" class="auth-tab-btn" id="tab-btn-register">Register Business</button>
+      </div>
+
+      <div id="auth-alert" class="alert alert-danger"></div>
+
+      <!-- Login Form -->
+      <form id="login-form">
+        <div class="form-group">
+          <label for="login-username">Username</label>
+          <input 
+            type="text" 
+            id="login-username" 
+            name="username" 
+            class="form-control" 
+            placeholder="e.g. admin" 
+            required 
+            autocomplete="username"
+            value="admin"
+          >
+        </div>
+
+        <div class="form-group">
+          <label for="login-password">Password</label>
+          <input 
+            type="password" 
+            id="login-password" 
+            name="password" 
+            class="form-control" 
+            placeholder="••••••••" 
+            required 
+            autocomplete="current-password"
+            value="admin123"
+          >
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin: 16px 0 22px 0; font-size: 0.82rem;">
+          <span style="color: var(--text-muted);">Quick Demo: <code style="color: var(--text-primary); background: var(--primary-light); padding: 2px 6px; border-radius: 4px;">admin / admin123</code></span>
+        </div>
+
+        <button type="submit" id="btn-login-submit" class="btn btn-primary" style="width: 100%;">
+          <span>Access Private Scorecard</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="register-form" style="display: none;">
+        <div class="form-group">
+          <label for="reg-business-name">Business / Store Name *</label>
+          <input type="text" id="reg-business-name" class="form-control" placeholder="e.g. Khyber Hardware & Industrial" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reg-owner-name">Owner / Manager Name</label>
+            <input type="text" id="reg-owner-name" class="form-control" placeholder="e.g. Ali Khan">
+          </div>
+          <div class="form-group">
+            <label for="reg-phone">Phone / WhatsApp</label>
+            <input type="tel" id="reg-phone" class="form-control" placeholder="0300-1234567">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reg-city">City</label>
+            <select id="reg-city" class="form-control">
+              <option value="Peshawar">Peshawar</option>
+              <option value="Lahore">Lahore</option>
+              <option value="Karachi">Karachi</option>
+              <option value="Rawalpindi">Rawalpindi / Islamabad</option>
+              <option value="Faisalabad">Faisalabad</option>
+              <option value="Multan">Multan</option>
+              <option value="Gujranwala">Gujranwala</option>
+              <option value="Other">Other City</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="reg-market">Wholesale Market / Area</label>
+            <input type="text" id="reg-market" class="form-control" placeholder="e.g. Namak Mandi / Shah Alam">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="reg-trade">Trade Category</label>
+          <select id="reg-trade" class="form-control">
+            <option value="Hardware & Tools">Hardware & Tools</option>
+            <option value="Sanitary & Pipes">Sanitary & Pipes</option>
+            <option value="Electronics">Electronics & Electrical</option>
+            <option value="Raw Materials">Raw Materials & Steel</option>
+            <option value="Textiles & Garments">Textiles & Garments</option>
+            <option value="Auto Parts">Auto Parts & Workshop</option>
+            <option value="General Wholesale">General Wholesale / FMCG</option>
+          </select>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="reg-username">Username *</label>
+            <input type="text" id="reg-username" class="form-control" placeholder="Choose username" required autocomplete="username">
+          </div>
+          <div class="form-group">
+            <label for="reg-password">Password *</label>
+            <input type="password" id="reg-password" class="form-control" placeholder="Create password" required autocomplete="new-password">
+          </div>
+        </div>
+
+        <button type="submit" id="btn-reg-submit" class="btn btn-emerald" style="width: 100%; margin-top: 10px;">
+          <span>Register Business & Start Logging</span>
+          <i class="fa-solid fa-check"></i>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/login.js"></script>
+</body>
+</html>

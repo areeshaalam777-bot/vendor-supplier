@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vendor & Supplier Management System</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body style="display: flex; align-items: center; justify-content: center; height: 100vh; text-align: center;">
+  <div>
+    <div style="width: 50px; height: 50px; border: 3px solid rgba(179, 200, 207, 0.35); border-top-color: var(--color-slate); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 16px auto;"></div>
+    <h2>Loading Scorecard Portal...</h2>
+    <p style="color: var(--text-secondary); margin-top: 8px;">Checking authentication...</p>
+  </div>
+
+  <style>
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+
+  <script>
+    fetch('/api/auth/me')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          window.location.href = '/dashboard.html';
+        } else {
+          window.location.href = '/login.html';
+        }
+      })
+      .catch(() => {
+        window.location.href = '/login.html';
+      });
+  </script>
+</body>
+</html>
