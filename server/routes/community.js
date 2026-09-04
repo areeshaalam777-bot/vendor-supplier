@@ -1,8 +1,16 @@
+// server/routes/community.js
+// Full replacement — adds the two routes the frontend already calls
+// (/overview and /supplier/:id) and fixes the unlock threshold to
+// match the spec: 30+ transactions WITH THAT SPECIFIC SUPPLIER,
+// not 3 transactions total across all suppliers.
+
 const express = require('express');
 const router = express.Router();
 const { Supplier, Transaction, User } = require('../db');
 const requireAuth = require('../middleware/requireAuth');
 const { calculateSupplierScores } = require('../scoring');
+
+const UNLOCK_THRESHOLD = 30; // spec Section 2.1 / 4.2: 30+ transactions, per supplier
 
 // Helper to normalize Pakistani phone numbers
 function normalizePhone(phone) {
@@ -14,124 +22,161 @@ function normalizePhone(phone) {
   return cleaned;
 }
 
-// GET /api/community/suppliers - Blinded community aggregate benchmark records
-router.get('/suppliers', requireAuth, async (req, res) => {
+// Groups every opted-in trader's suppliers into blinded community pools,
+// keyed by normalized phone (falls back to lowercase name if no phone).
+async function buildCommunityGroups() {
+  const optedInUsers = await User.find({ community_opt_in: true }).select('_id').lean();
+  const optedInIds = optedInUsers.map(u => u._id);
+  const allSuppliers = await Supplier.find({ user_id: { $in: optedInIds } }).lean();
+
+  const groups = {};
+  for (const sup of allSuppliers) {
+    const normPhone = normalizePhone(sup.phone);
+    const key = normPhone || sup.name.trim().toLowerCase();
+    if (!groups[key]) {
+      groups[key] = {
+        representative_name: sup.name,
+        city: sup.city,
+        market_area: sup.market_area,
+        category: sup.category,
+        contributor_user_ids: new Set(),
+        supplier_record_ids: []
+      };
+    }
+    groups[key].contributor_user_ids.add(sup.user_id.toString());
+    groups[key].supplier_record_ids.push(sup._id);
+  }
+  return groups;
+}
+
+// GET /api/community/overview - unlock status + per-category benchmarks
+// (this is what dashboard.js calls on every dashboard load / tab click)
+router.get('/overview', requireAuth, async (req, res) => {
   try {
-    const currentUserId = req.session.user.id;
-    const { category, city, min_score, search } = req.query;
+    const userId = req.session.user.id;
 
-    // Check how many transactions the current user has contributed
-    const myTransactionCount = await Transaction.countDocuments({ user_id: currentUserId });
-    const isUnlocked = myTransactionCount >= 3; // Network unlock threshold: 3+ transactions
+    // Count MY transactions per-supplier — unlock is per-supplier, not global
+    const myTransactions = await Transaction.find({ user_id: userId }).lean();
+    const perSupplierCounts = {};
+    myTransactions.forEach(t => {
+      const sid = t.supplier_id.toString();
+      perSupplierCounts[sid] = (perSupplierCounts[sid] || 0) + 1;
+    });
+    const counts = Object.values(perSupplierCounts);
+    const maxForAnySupplier = counts.length ? Math.max(...counts) : 0;
+    const isUnlocked = maxForAnySupplier >= UNLOCK_THRESHOLD;
 
-    // Get all transactions across opted-in traders
-    const optedInUsers = await User.find({ community_opt_in: true }).select('_id').lean();
-    const optedInIds = optedInUsers.map(u => u._id);
+    // Build category benchmarks across the whole opted-in network
+    const groups = await buildCommunityGroups();
+    const categoryStats = {};
 
-    const allSuppliers = await Supplier.find({ user_id: { $in: optedInIds } }).lean();
+    for (const key of Object.keys(groups)) {
+      const group = groups[key];
+      const txs = await Transaction.find({ supplier_id: { $in: group.supplier_record_ids } }).lean();
+      if (txs.length === 0) continue;
 
-    // Group suppliers across multiple traders by normalized phone number or exact name
-    const groupedSuppliers = {};
-
-    for (const sup of allSuppliers) {
-      const normPhone = normalizePhone(sup.phone);
-      const key = normPhone || sup.name.trim().toLowerCase();
-
-      if (!groupedSuppliers[key]) {
-        groupedSuppliers[key] = {
-          representative_name: sup.name,
-          phone: sup.phone,
-          normalized_phone: normPhone,
-          city: sup.city,
-          market_area: sup.market_area,
-          category: sup.category,
-          contributor_user_ids: new Set(),
-          supplier_record_ids: []
-        };
+      const score = calculateSupplierScores(txs);
+      const cat = group.category || 'Uncategorized';
+      if (!categoryStats[cat]) {
+        categoryStats[cat] = { category: cat, sample_size: 0, scoreSum: 0, punctSum: 0, disputeSum: 0, n: 0 };
       }
-
-      groupedSuppliers[key].contributor_user_ids.add(sup.user_id.toString());
-      groupedSuppliers[key].supplier_record_ids.push(sup._id);
+      const c = categoryStats[cat];
+      c.sample_size += score.total_transactions;
+      c.scoreSum += score.composite_score;
+      c.punctSum += score.on_time_rate;
+      c.disputeSum += score.dispute_rate;
+      c.n += 1;
     }
 
-    const aggregateList = [];
-
-    for (const key of Object.keys(groupedSuppliers)) {
-      const group = groupedSuppliers[key];
-      const allGroupTxs = await Transaction.find({
-        supplier_id: { $in: group.supplier_record_ids }
-      }).sort({ actual_date: 1 }).lean();
-
-      if (allGroupTxs.length === 0) continue;
-
-      const score = calculateSupplierScores(allGroupTxs);
-      const contributorCount = group.contributor_user_ids.size;
-
-      // Filter options
-      if (category && group.category !== category) continue;
-      if (city && group.city !== city) continue;
-      if (min_score && score.composite_score < parseFloat(min_score)) continue;
-      if (search) {
-        const q = search.toLowerCase();
-        const matchName = group.representative_name.toLowerCase().includes(q);
-        const matchCity = group.city.toLowerCase().includes(q);
-        const matchMarket = (group.market_area || '').toLowerCase().includes(q);
-        if (!matchName && !matchCity && !matchMarket) continue;
-      }
-
-      // Check if current trader uses this supplier
-      const myTransactionsForThisSupplier = await Transaction.find({
-        user_id: currentUserId,
-        supplier_id: { $in: group.supplier_record_ids }
-      }).sort({ actual_date: 1 }).lean();
-
-      const myScore = myTransactionsForThisSupplier.length > 0 
-        ? calculateSupplierScores(myTransactionsForThisSupplier) 
-        : null;
-
-      // Blinded record
-      aggregateList.push({
-        id: key,
-        supplier_name: group.representative_name,
-        city: group.city,
-        market_area: group.market_area,
-        category: group.category,
-        total_deliveries_tracked: score.total_transactions,
-        contributing_traders_count: contributorCount,
-        network_grade: score.grade,
-        network_grade_label: score.grade_label,
-        network_composite_score: score.composite_score,
-        network_punctuality: score.punctuality_score,
-        network_on_time_rate: score.on_time_rate,
-        network_accuracy: score.quantity_score,
-        network_accuracy_rate: score.accuracy_rate,
-        network_quality: score.quality_score,
-        network_quality_stars: score.avg_quality_stars,
-        network_dispute_rate: score.dispute_rate,
-        network_risk_status: score.risk_status,
-        my_personal_experience: myScore ? {
-          deliveries_logged: myScore.total_transactions,
-          personal_grade: myScore.grade,
-          personal_score: myScore.composite_score
-        } : null
-      });
-    }
-
-    // Sort by network composite score descending
-    aggregateList.sort((a, b) => b.network_composite_score - a.network_composite_score);
+    const categoryBenchmarks = Object.values(categoryStats).map(c => {
+      const avgScore = Math.round(c.scoreSum / c.n);
+      let grade = 'D';
+      if (avgScore >= 92) grade = 'A+';
+      else if (avgScore >= 80) grade = 'A';
+      else if (avgScore >= 68) grade = 'B';
+      else if (avgScore >= 50) grade = 'C';
+      return {
+        category: c.category,
+        sample_size: c.sample_size,
+        average_reliability: avgScore,
+        punctuality_rate: Math.round(c.punctSum / c.n),
+        dispute_rate: Math.round(c.disputeSum / c.n),
+        grade
+      };
+    }).sort((a, b) => b.average_reliability - a.average_reliability);
 
     res.json({
       success: true,
-      meta: {
-        is_unlocked: isUnlocked,
-        contributions_needed: Math.max(0, 3 - myTransactionCount),
-        total_verified_suppliers_in_network: aggregateList.length
-      },
-      data: aggregateList
+      data: {
+        userContributionCount: maxForAnySupplier, // "contribute X more to unlock" is per-supplier
+        isUnlocked,
+        unlockThreshold: UNLOCK_THRESHOLD,
+        categoryBenchmarks
+      }
     });
   } catch (error) {
-    console.error('Error loading community intelligence:', error);
-    res.status(500).json({ success: false, message: 'Failed to retrieve community benchmarks' });
+    console.error('Error loading community overview:', error);
+    res.status(500).json({ success: false, message: 'Failed to retrieve community overview' });
+  }
+});
+
+// GET /api/community/supplier/:id - blinded network score for one of MY suppliers
+router.get('/supplier/:id', requireAuth, async (req, res) => {
+  try {
+    const userId = req.session.user.id;
+    const mySupplier = await Supplier.findOne({ _id: req.params.id, user_id: userId }).lean();
+    if (!mySupplier) {
+      return res.status(404).json({ success: false, message: 'Supplier not found' });
+    }
+
+    const myTxs = await Transaction.find({ user_id: userId, supplier_id: mySupplier._id })
+      .sort({ actual_date: 1 }).lean();
+    const myScore = calculateSupplierScores(myTxs);
+    const isUnlocked = myTxs.length >= UNLOCK_THRESHOLD;
+
+    if (!isUnlocked) {
+      return res.json({
+        success: true,
+        data: {
+          has_community_data: false,
+          locked: true,
+          supplier_name: mySupplier.name,
+          contributions_logged: myTxs.length,
+          contributions_needed: UNLOCK_THRESHOLD - myTxs.length
+        }
+      });
+    }
+
+    const groups = await buildCommunityGroups();
+    const normPhone = normalizePhone(mySupplier.phone);
+    const key = normPhone || mySupplier.name.trim().toLowerCase();
+    const group = groups[key];
+
+    if (!group || group.contributor_user_ids.size < 2) {
+      // Unlocked for this user, but no other trader has scored this supplier yet
+      return res.json({
+        success: true,
+        data: { has_community_data: false, locked: false, supplier_name: mySupplier.name }
+      });
+    }
+
+    const groupTxs = await Transaction.find({ supplier_id: { $in: group.supplier_record_ids } }).lean();
+    const communityScore = calculateSupplierScores(groupTxs);
+
+    res.json({
+      success: true,
+      data: {
+        has_community_data: true,
+        supplier_name: mySupplier.name,
+        contributing_businesses: group.contributor_user_ids.size,
+        total_community_transactions: communityScore.total_transactions,
+        communityScorecard: communityScore,
+        privateScorecard: myScore
+      }
+    });
+  } catch (error) {
+    console.error('Error loading supplier community data:', error);
+    res.status(500).json({ success: false, message: 'Failed to retrieve community data' });
   }
 });
 

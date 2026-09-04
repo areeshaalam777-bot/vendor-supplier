@@ -589,18 +589,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await res.json();
 
       if (!result.success || !result.data.has_community_data) {
-        content.innerHTML = `
-          <div style="text-align: center; padding: 30px;">
-            <i class="fa-solid fa-user-shield" style="font-size: 2.5rem; color: #818cf8; margin-bottom: 12px;"></i>
-            <h3>No Community Pool Records Yet</h3>
-            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">
-              You are the first business in the network to score <strong>${escapeHtml(result.data ? result.data.supplier_name : 'this supplier')}</strong>.
-              As other traders in your market add deliveries, aggregated scores will appear here automatically.
-            </p>
-          </div>
-        `;
-        return;
-      }
+  const d = result.data;
+  const message = d && d.locked
+    ? `You've logged <strong>${d.contributions_logged}</strong> transactions with this supplier. Log <strong>${d.contributions_needed} more</strong> to unlock the community network score (30 transactions unlocks it).`
+    : `You are the first business in the network to score <strong>${escapeHtml(d ? d.supplier_name : 'this supplier')}</strong>. As other traders in your market add deliveries, aggregated scores will appear here automatically.`;
+
+  content.innerHTML = `
+    <div style="text-align: center; padding: 30px;">
+      <i class="fa-solid fa-user-shield" style="font-size: 2.5rem; color: #818cf8; margin-bottom: 12px;"></i>
+      <h3>${d && d.locked ? 'Keep Logging to Unlock' : 'No Community Pool Records Yet'}</h3>
+      <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">${message}</p>
+    </div>
+  `;
+  return;
+}
 
       const d = result.data;
       const comm = d.communityScorecard;
