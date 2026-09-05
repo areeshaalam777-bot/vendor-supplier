@@ -59,8 +59,10 @@ router.get('/overview', requireAuth, async (req, res) => {
     const myTransactions = await Transaction.find({ user_id: userId }).lean();
     const perSupplierCounts = {};
     myTransactions.forEach(t => {
-      const sid = t.supplier_id.toString();
-      perSupplierCounts[sid] = (perSupplierCounts[sid] || 0) + 1;
+      if (t.supplier_id) {
+        const sid = t.supplier_id.toString();
+        perSupplierCounts[sid] = (perSupplierCounts[sid] || 0) + 1;
+      }
     });
     const counts = Object.values(perSupplierCounts);
     const maxForAnySupplier = counts.length ? Math.max(...counts) : 0;

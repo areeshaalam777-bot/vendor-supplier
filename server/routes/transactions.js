@@ -187,11 +187,16 @@ router.get('/summary/stats', async (req, res) => {
       dispute_status: { $ne: 'Resolved' }
     });
 
-    const spendAgg = await Transaction.aggregate([
-      { $match: { user_id: require('mongoose').Types.ObjectId.createFromHexString(userId) } },
-      { $group: { _id: null, total: { $sum: '$amount_pkr' } } }
-    ]);
-    const totalSpendPKR = spendAgg.length > 0 ? spendAgg[0].total : 0;
+    const mongoose = require('mongoose');
+    let totalSpendPKR = 0;
+    if (mongoose.Types.ObjectId.isValid(userId)) {
+      const userObjectId = new mongoose.Types.ObjectId(userId);
+      const spendAgg = await Transaction.aggregate([
+        { $match: { user_id: userObjectId } },
+        { $group: { _id: null, total: { $sum: '$amount_pkr' } } }
+      ]);
+      totalSpendPKR = spendAgg.length > 0 ? (spendAgg[0].total || 0) : 0;
+    }
 
     // Calculate overall portfolio reliability score
     const allTxs = await Transaction.find({ user_id: userId }).lean();

@@ -3,8 +3,14 @@ function requireAuth(req, res, next) {
     return next();
   }
 
-  // If request expects JSON (API calls)
-  if (req.xhr || (req.headers.accept && req.headers.accept.includes('application/json')) || req.path.startsWith('/api')) {
+  // If request expects JSON or is under /api routes
+  const isApi = (req.originalUrl && req.originalUrl.startsWith('/api')) ||
+                (req.baseUrl && req.baseUrl.startsWith('/api')) ||
+                req.path.startsWith('/api') ||
+                req.xhr ||
+                (req.headers.accept && req.headers.accept.includes('application/json'));
+
+  if (isApi) {
     return res.status(401).json({ success: false, message: 'Unauthorized. Please log in.' });
   }
 

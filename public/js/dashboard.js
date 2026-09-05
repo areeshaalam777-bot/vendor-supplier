@@ -18,8 +18,78 @@ document.addEventListener('DOMContentLoaded', () => {
   const txModal = document.getElementById('tx-modal');
   const disputeEvidenceModal = document.getElementById('dispute-evidence-modal');
   const communitySupplierModal = document.getElementById('community-supplier-modal');
-const supplierTimelineModal = document.getElementById('supplier-timeline-modal');
+  const supplierTimelineModal = document.getElementById('supplier-timeline-modal');
   const settingsModal = document.getElementById('settings-modal');
+  const confirmModal = document.getElementById('confirm-modal');
+  const toastContainer = document.getElementById('toast-container');
+
+  // Custom Toast Popup Notification System
+  function showToast({ title, message, type = 'success', duration = 3500 }) {
+    if (!toastContainer) return;
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+
+    let iconHtml = '<i class="fa-solid fa-check"></i>';
+    if (type === 'error') iconHtml = '<i class="fa-solid fa-triangle-exclamation"></i>';
+    else if (type === 'warning') iconHtml = '<i class="fa-solid fa-circle-exclamation"></i>';
+    else if (type === 'info') iconHtml = '<i class="fa-solid fa-circle-info"></i>';
+
+    const defaultTitle = type === 'success' ? 'Success' : (type === 'error' ? 'Action Failed' : (type === 'warning' ? 'Notice' : 'Information'));
+
+    toast.innerHTML = `
+      <div class="toast-icon">${iconHtml}</div>
+      <div class="toast-body">
+        <div class="toast-title">${escapeHtml(title || defaultTitle)}</div>
+        <div class="toast-message">${escapeHtml(message || '')}</div>
+      </div>
+      <button class="toast-close" aria-label="Close Notification">&times;</button>
+      <div class="toast-progress" style="animation-duration: ${duration}ms;"></div>
+    `;
+
+    const closeBtn = toast.querySelector('.toast-close');
+    let timer;
+
+    const removeToast = () => {
+      clearTimeout(timer);
+      toast.classList.add('toast-hiding');
+      setTimeout(() => {
+        if (toast.parentNode) toast.parentNode.removeChild(toast);
+      }, 250);
+    };
+
+    closeBtn.addEventListener('click', removeToast);
+    timer = setTimeout(removeToast, duration);
+
+    toastContainer.appendChild(toast);
+  }
+
+  // Custom Confirmation Modal System
+  const confirmTitleEl = document.getElementById('confirm-title');
+  const confirmMsgEl = document.getElementById('confirm-message');
+  const confirmBtnAction = document.getElementById('btn-confirm-action');
+  const confirmBtnLabel = document.getElementById('confirm-btn-label');
+
+  let activeConfirmCallback = null;
+
+  function showConfirm({ title, message, btnText = 'Delete Record', onConfirm }) {
+    if (confirmTitleEl) confirmTitleEl.textContent = title || 'Confirm Deletion';
+    if (confirmMsgEl) confirmMsgEl.textContent = message || 'Are you sure? This action cannot be undone.';
+    if (confirmBtnLabel) confirmBtnLabel.textContent = btnText;
+    activeConfirmCallback = onConfirm;
+    if (confirmModal) confirmModal.classList.add('active');
+  }
+
+  if (confirmBtnAction) {
+    confirmBtnAction.addEventListener('click', async () => {
+      if (confirmModal) confirmModal.classList.remove('active');
+      if (typeof activeConfirmCallback === 'function') {
+        const cb = activeConfirmCallback;
+        activeConfirmCallback = null;
+        await cb();
+      }
+    });
+  }
 
   // Forms
   const supplierForm = document.getElementById('supplier-form');
@@ -35,9 +105,35 @@ const supplierTimelineModal = document.getElementById('supplier-timeline-modal')
     disputeFields.style.display = txHasDispute.checked ? 'block' : 'none';
   });
 
-  // Delegated click handler for supplier cards/table — attached ONCE here,
-  // so re-rendering suppliers (cards or table) never re-binds or
-  // double-binds listeners on the same buttons.
+  // Mobile Drawer Toggle
+  const sidebar = document.getElementById('dashboard-sidebar');
+  const sidebarOverlay = document.getElementById('sidebar-overlay');
+  const btnMobileMenu = document.getElementById('btn-mobile-menu');
+  const btnSidebarClose = document.getElementById('btn-sidebar-close');
+
+  function openMobileSidebar() {
+    if (sidebar) sidebar.classList.add('mobile-open');
+    if (sidebarOverlay) sidebarOverlay.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeMobileSidebar() {
+    if (sidebar) sidebar.classList.remove('mobile-open');
+    if (sidebarOverlay) sidebarOverlay.classList.remove('active');
+    document.body.style.overflow = '';
+  }
+
+  if (btnMobileMenu) {
+    btnMobileMenu.addEventListener('click', openMobileSidebar);
+  }
+  if (btnSidebarClose) {
+    btnSidebarClose.addEventListener('click', closeMobileSidebar);
+  }
+  if (sidebarOverlay) {
+    sidebarOverlay.addEventListener('click', closeMobileSidebar);
+  }
+
+  // Delegated click handler for supplier cards/table & transaction ledger
   document.addEventListener('click', (e) => {
     const quickTxBtn = e.target.closest('.btn-quick-tx');
     if (quickTxBtn) {
@@ -50,19 +146,34 @@ const supplierTimelineModal = document.getElementById('supplier-timeline-modal')
       openCommunitySupplierModal(communityBtn.getAttribute('data-id'));
       return;
     }
+
     const timelineBtn = e.target.closest('.btn-timeline-view');
-if (timelineBtn) {
-   openSupplierTimelineModal(timelineBtn.getAttribute('data-id'));
-  return;
-}
+    if (timelineBtn) {
+      openSupplierTimelineModal(timelineBtn.getAttribute('data-id'));
+      return;
+    }
+
     const editBtn = e.target.closest('.btn-edit-supplier');
     if (editBtn) {
       editSupplier(editBtn.getAttribute('data-id'));
       return;
     }
+
     const deleteBtn = e.target.closest('.btn-delete-supplier');
     if (deleteBtn) {
       deleteSupplier(deleteBtn.getAttribute('data-id'));
+      return;
+    }
+
+    const formatDisputeBtn = e.target.closest('.btn-format-dispute');
+    if (formatDisputeBtn) {
+      generateDisputeNotice(formatDisputeBtn.getAttribute('data-id'));
+      return;
+    }
+
+    const deleteTxBtn = e.target.closest('.btn-delete-tx');
+    if (deleteTxBtn) {
+      deleteTransaction(deleteTxBtn.getAttribute('data-id'));
       return;
     }
   });
@@ -122,6 +233,8 @@ if (timelineBtn) {
         viewSubtitle.textContent = 'Blinded aggregate reliability benchmarks across Pakistan wholesale markets';
         fetchCommunityData();
       }
+
+      closeMobileSidebar();
     });
   });
 
@@ -183,12 +296,25 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
     if (result.success) {
       currentUser = result.user;
       settingsModal.classList.remove('active');
+      showToast({
+        title: 'Settings Saved',
+        message: enabled ? 'Community intelligence pooling enabled.' : 'Community intelligence pooling disabled.',
+        type: 'success'
+      });
       refreshAll();
     } else {
-      alert(result.message || 'Failed to save settings');
+      showToast({
+        title: 'Settings Error',
+        message: result.message || 'Failed to save settings.',
+        type: 'error'
+      });
     }
   } catch (err) {
-    alert('Failed to save settings');
+    showToast({
+      title: 'Connection Error',
+      message: 'Failed to update settings.',
+      type: 'error'
+    });
   } finally {
     btn.disabled = false;
   }
@@ -565,19 +691,6 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
       `;
     }).join('');
 
-    document.querySelectorAll('.btn-format-dispute').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
-        generateDisputeNotice(id);
-      });
-    });
-
-    document.querySelectorAll('.btn-delete-tx').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
-        deleteTransaction(id);
-      });
-    });
   }
 
   // 5. Fetch Community Intelligence Data
@@ -598,6 +711,11 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
   }
 
   function renderCommunityBenchmarks(benchmarks) {
+    if (!benchmarks || benchmarks.length === 0) {
+      communityBenchmarksBody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 30px;">No community benchmarks available.</td></tr>`;
+      return;
+    }
+
     communityBenchmarksBody.innerHTML = benchmarks.map(b => {
       const gradeClass = `grade-${b.grade.replace('+', 'plus')}`;
       return `
@@ -613,131 +731,51 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
     }).join('');
   }
 
+  async function openSupplierTimelineModal(supplierId) {
+    supplierTimelineModal.classList.add('active');
+    const content = document.getElementById('supplier-timeline-content');
+    const nameEl = document.getElementById('timeline-supplier-name');
+    content.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading dispute history...</div>`;
 
-  function renderCommunityBenchmarks(benchmarks) {
-  communityBenchmarksBody.innerHTML = benchmarks.map(b => {
-    const gradeClass = `grade-${b.grade.replace('+', 'plus')}`;
-    return `
-      <tr>
-        <td><span style="font-weight: 700;">${escapeHtml(b.category)}</span></td>
-        <td><span style="font-family: monospace;">${b.sample_size} deliveries verified</span></td>
-        <td><span style="font-weight: 700; color: #818cf8;">${b.average_reliability}%</span></td>
-        <td><span style="font-weight: 700; color: var(--accent-cyan);">${b.punctuality_rate}%</span></td>
-        <td><span style="font-weight: 700; color: ${b.dispute_rate > 15 ? 'var(--accent-rose)' : 'inherit'};">${b.dispute_rate}%</span></td>
-        <td><span class="grade-badge ${gradeClass}" style="width: 28px; height: 28px; font-size: 0.85rem;">${b.grade}</span></td>
-      </tr>
-    `;
-  }).join('');
-}
+    try {
+      const res = await fetch(`/api/suppliers/${supplierId}`);
+      const result = await res.json();
+      if (!result.success) {
+        content.innerHTML = `<div style="color:var(--accent-rose); padding:20px; text-align:center;">Failed to load supplier timeline.</div>`;
+        return;
+      }
 
-// NEW FUNCTION — paste this here
-async function openSupplierTimelineModal(supplierId) {
-  supplierTimelineModal.classList.add('active');
-  const content = document.getElementById('supplier-timeline-content');
-  const nameEl = document.getElementById('timeline-supplier-name');
-  content.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading dispute history...</div>`;
+      const supplier = result.data;
+      nameEl.textContent = `${supplier.name} · Evidence record, most recent first`;
 
-  try {
-    const res = await fetch(`/api/suppliers/${supplierId}`);
-    const result = await res.json();
-    if (!result.success) {
-      content.innerHTML = `<div style="color:var(--accent-rose); padding:20px; text-align:center;">Failed to load supplier timeline.</div>`;
-      return;
-    }
+      const disputes = (supplier.transactions || []).filter(t => t.has_dispute === 1);
 
-    const supplier = result.data;
-    nameEl.textContent = `${supplier.name} · Evidence record, most recent first`;
+      if (disputes.length === 0) {
+        content.innerHTML = `
+          <div style="text-align:center; padding:40px; color:var(--text-muted);">
+            <i class="fa-solid fa-circle-check" style="font-size:2rem; color:var(--accent-emerald); margin-bottom:10px;"></i>
+            <h3>No disputes on record</h3>
+            <p style="font-size:0.85rem; margin-top:6px;">Every logged delivery from this supplier has been clean so far.</p>
+          </div>`;
+        return;
+      }
 
-    const disputes = (supplier.transactions || []).filter(t => t.has_dispute === 1);
-
-    if (disputes.length === 0) {
-      content.innerHTML = `
-        <div style="text-align:center; padding:40px; color:var(--text-muted);">
-          <i class="fa-solid fa-circle-check" style="font-size:2rem; color:var(--accent-emerald); margin-bottom:10px;"></i>
-          <h3>No disputes on record</h3>
-          <p style="font-size:0.85rem; margin-top:6px;">Every logged delivery from this supplier has been clean so far.</p>
-        </div>`;
-      return;
-    }
-
-    content.innerHTML = disputes.map(t => `
-      <div style="border-left: 3px solid var(--accent-rose); padding: 10px 14px; margin-bottom: 12px; background: var(--bg-card); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-weight:700;">${t.actual_date}</span>
-          <span class="badge ${t.dispute_status === 'Resolved' ? 'badge-dispute-resolved' : 'badge-dispute-open'}">${escapeHtml(t.dispute_status || 'Open')}</span>
+      content.innerHTML = disputes.map(t => `
+        <div style="border-left: 3px solid var(--accent-rose); padding: 10px 14px; margin-bottom: 12px; background: var(--bg-card); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span style="font-weight:700;">${t.actual_date}</span>
+            <span class="badge ${t.dispute_status === 'Resolved' ? 'badge-dispute-resolved' : 'badge-dispute-open'}">${escapeHtml(t.dispute_status || 'Open')}</span>
+          </div>
+          <div style="font-size:0.85rem; margin-top:4px;">${escapeHtml(t.item_description)} — ${t.quantity_received}/${t.quantity_ordered} received</div>
+          <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:4px;">Reason: ${escapeHtml(t.dispute_reason || 'Not specified')}</div>
+          ${t.dispute_notes ? `<div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px; font-style:italic;">"${escapeHtml(t.dispute_notes)}"</div>` : ''}
         </div>
-        <div style="font-size:0.85rem; margin-top:4px;">${escapeHtml(t.item_description)} — ${t.quantity_received}/${t.quantity_ordered} received</div>
-        <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:4px;">Reason: ${escapeHtml(t.dispute_reason || 'Not specified')}</div>
-        ${t.dispute_notes ? `<div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px; font-style:italic;">"${escapeHtml(t.dispute_notes)}"</div>` : ''}
-      </div>
-    `).join('');
-  } catch (err) {
-    console.error('Timeline error:', err);
-    content.innerHTML = `<div style="color:var(--accent-rose); padding:20px; text-align:center;">Failed to load supplier timeline.</div>`;
-  }
-}
-function renderCommunityBenchmarks(benchmarks) {
-  communityBenchmarksBody.innerHTML = benchmarks.map(b => {
-    const gradeClass = `grade-${b.grade.replace('+', 'plus')}`;
-    return `
-      <tr>
-        <td><span style="font-weight: 700;">${escapeHtml(b.category)}</span></td>
-        <td><span style="font-family: monospace;">${b.sample_size} deliveries verified</span></td>
-        <td><span style="font-weight: 700; color: #818cf8;">${b.average_reliability}%</span></td>
-        <td><span style="font-weight: 700; color: var(--accent-cyan);">${b.punctuality_rate}%</span></td>
-        <td><span style="font-weight: 700; color: ${b.dispute_rate > 15 ? 'var(--accent-rose)' : 'inherit'};">${b.dispute_rate}%</span></td>
-        <td><span class="grade-badge ${gradeClass}" style="width: 28px; height: 28px; font-size: 0.85rem;">${b.grade}</span></td>
-      </tr>
-    `;
-  }).join('');
-}
-
-// NEW FUNCTION — paste this here
-async function openSupplierTimelineModal(supplierId) {
-  supplierTimelineModal.classList.add('active');
-  const content = document.getElementById('supplier-timeline-content');
-  const nameEl = document.getElementById('timeline-supplier-name');
-  content.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading dispute history...</div>`;
-
-  try {
-    const res = await fetch(`/api/suppliers/${supplierId}`);
-    const result = await res.json();
-    if (!result.success) {
+      `).join('');
+    } catch (err) {
+      console.error('Timeline error:', err);
       content.innerHTML = `<div style="color:var(--accent-rose); padding:20px; text-align:center;">Failed to load supplier timeline.</div>`;
-      return;
     }
-
-    const supplier = result.data;
-    nameEl.textContent = `${supplier.name} · Evidence record, most recent first`;
-
-    const disputes = (supplier.transactions || []).filter(t => t.has_dispute === 1);
-
-    if (disputes.length === 0) {
-      content.innerHTML = `
-        <div style="text-align:center; padding:40px; color:var(--text-muted);">
-          <i class="fa-solid fa-circle-check" style="font-size:2rem; color:var(--accent-emerald); margin-bottom:10px;"></i>
-          <h3>No disputes on record</h3>
-          <p style="font-size:0.85rem; margin-top:6px;">Every logged delivery from this supplier has been clean so far.</p>
-        </div>`;
-      return;
-    }
-
-    content.innerHTML = disputes.map(t => `
-      <div style="border-left: 3px solid var(--accent-rose); padding: 10px 14px; margin-bottom: 12px; background: var(--bg-card); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <span style="font-weight:700;">${t.actual_date}</span>
-          <span class="badge ${t.dispute_status === 'Resolved' ? 'badge-dispute-resolved' : 'badge-dispute-open'}">${escapeHtml(t.dispute_status || 'Open')}</span>
-        </div>
-        <div style="font-size:0.85rem; margin-top:4px;">${escapeHtml(t.item_description)} — ${t.quantity_received}/${t.quantity_ordered} received</div>
-        <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:4px;">Reason: ${escapeHtml(t.dispute_reason || 'Not specified')}</div>
-        ${t.dispute_notes ? `<div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px; font-style:italic;">"${escapeHtml(t.dispute_notes)}"</div>` : ''}
-      </div>
-    `).join('');
-  } catch (err) {
-    console.error('Timeline error:', err);
-    content.innerHTML = `<div style="color:var(--accent-rose); padding:20px; text-align:center;">Failed to load supplier timeline.</div>`;
   }
-}
 
   // 6. Community Supplier Benchmark Modal
   async function openCommunitySupplierModal(supplierId) {
@@ -783,7 +821,7 @@ async function openSupplierTimelineModal(supplierId) {
         </div>
 
         <!-- Side-by-side comparison (Your Private Score vs Network Average) -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+        <div class="community-compare-grid">
           <div style="background: rgba(79, 70, 229, 0.1); border: 1px solid rgba(79, 70, 229, 0.3); border-radius: var(--radius-sm); padding: 16px; text-align: center;">
             <div style="font-size: 0.75rem; color: var(--text-secondary); font-weight: 600;">Your Private Score</div>
             <div style="font-size: 1.8rem; font-weight: 800; color: #818cf8; margin: 4px 0;">${priv.composite_score}%</div>
@@ -862,14 +900,24 @@ async function openSupplierTimelineModal(supplierId) {
 
     navigator.clipboard.writeText(text).then(() => {
       const copyConfirm = document.getElementById('copy-confirm');
-
-      copyConfirm.style.display = 'inline-block';
-
-      setTimeout(() => {
-        copyConfirm.style.display = 'none';
-      }, 3000);
+      if (copyConfirm) {
+        copyConfirm.style.display = 'inline-block';
+        setTimeout(() => {
+          copyConfirm.style.display = 'none';
+        }, 3000);
+      }
+      showToast({
+        title: 'Notice Copied',
+        message: 'Reconciliation notice copied to clipboard. Ready to paste in WhatsApp.',
+        type: 'success'
+      });
     }).catch(err => {
       console.error('Copy failed:', err);
+      showToast({
+        title: 'Copy Failed',
+        message: 'Please select and copy the text manually.',
+        type: 'error'
+      });
     });
   });
 
@@ -932,14 +980,27 @@ async function openSupplierTimelineModal(supplierId) {
 
       if (result.success) {
         txModal.classList.remove('active');
+        showToast({
+          title: 'Delivery Logged',
+          message: payload.has_dispute ? 'Transaction logged and dispute claim registered.' : 'Delivery record logged and scorecard updated.',
+          type: payload.has_dispute ? 'warning' : 'success'
+        });
         refreshAll();
       } else {
-        alert(result.message || 'Error recording transaction');
+        showToast({
+          title: 'Error',
+          message: result.message || 'Error recording transaction.',
+          type: 'error'
+        });
       }
 
     } catch (err) {
       console.error(err);
-      alert('Failed to submit transaction data');
+      showToast({
+        title: 'Connection Error',
+        message: 'Failed to submit transaction data.',
+        type: 'error'
+      });
 
     } finally {
       btnSave.disabled = false;
@@ -972,32 +1033,78 @@ async function openSupplierTimelineModal(supplierId) {
     supplierModal.classList.add('active');
   }
 
-  async function deleteSupplier(id) {
-    if (!confirm('Are you sure you want to delete this supplier and all associated delivery records?')) return;
-    try {
-      const res = await fetch(`/api/suppliers/${id}`, { method: 'DELETE' });
-      const result = await res.json();
-      if (result.success) {
-        refreshAll();
-      } else {
-        alert(result.message || 'Failed to delete supplier');
+  function deleteSupplier(id) {
+    const s = suppliersList.find(item => item.id == id);
+    const name = s ? s.name : 'this supplier';
+
+    showConfirm({
+      title: 'Delete Supplier Record',
+      message: `Are you sure you want to delete "${name}" and all associated delivery logs? This cannot be undone.`,
+      btnText: 'Delete Supplier',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/suppliers/${id}`, { method: 'DELETE' });
+          const result = await res.json();
+          if (result.success) {
+            showToast({
+              title: 'Supplier Deleted',
+              message: `Supplier "${name}" and records removed successfully.`,
+              type: 'success'
+            });
+            refreshAll();
+          } else {
+            showToast({
+              title: 'Delete Failed',
+              message: result.message || 'Failed to delete supplier.',
+              type: 'error'
+            });
+          }
+        } catch (err) {
+          showToast({
+            title: 'Connection Error',
+            message: 'Network error deleting supplier record.',
+            type: 'error'
+          });
+        }
       }
-    } catch (err) {
-      alert('Error deleting supplier');
-    }
+    });
   }
 
-  async function deleteTransaction(id) {
-    if (!confirm('Delete this transaction record from the ledger?')) return;
-    try {
-      const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
-      const result = await res.json();
-      if (result.success) {
-        refreshAll();
+  function deleteTransaction(id) {
+    const t = transactionsList.find(item => item.id == id);
+    const itemDesc = t ? t.item_description : 'this delivery';
+
+    showConfirm({
+      title: 'Delete Transaction Entry',
+      message: `Are you sure you want to remove the ledger record for "${itemDesc}"?`,
+      btnText: 'Delete Entry',
+      onConfirm: async () => {
+        try {
+          const res = await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
+          const result = await res.json();
+          if (result.success) {
+            showToast({
+              title: 'Transaction Removed',
+              message: `Ledger entry for "${itemDesc}" removed successfully.`,
+              type: 'success'
+            });
+            refreshAll();
+          } else {
+            showToast({
+              title: 'Delete Failed',
+              message: result.message || 'Failed to delete transaction.',
+              type: 'error'
+            });
+          }
+        } catch (err) {
+          showToast({
+            title: 'Connection Error',
+            message: 'Network error deleting transaction.',
+            type: 'error'
+          });
+        }
       }
-    } catch (err) {
-      alert('Error deleting transaction');
-    }
+    });
   }
 
   supplierForm.addEventListener('submit', async (e) => {
@@ -1028,12 +1135,25 @@ async function openSupplierTimelineModal(supplierId) {
 
       if (result.success) {
         supplierModal.classList.remove('active');
+        showToast({
+          title: isEdit ? 'Supplier Updated' : 'Supplier Registered',
+          message: isEdit ? `Record for "${payload.name}" updated successfully.` : `Supplier "${payload.name}" added to registry.`,
+          type: 'success'
+        });
         refreshAll();
       } else {
-        alert(result.message || 'Error saving supplier');
+        showToast({
+          title: 'Error',
+          message: result.message || 'Error saving supplier record.',
+          type: 'error'
+        });
       }
     } catch (err) {
-      alert('Error saving supplier');
+      showToast({
+        title: 'Connection Error',
+        message: 'Network error saving supplier.',
+        type: 'error'
+      });
     }
   });
 
