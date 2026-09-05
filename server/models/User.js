@@ -9,7 +9,7 @@ const userSchema = new mongoose.Schema({
   market_area: { type: String, default: 'Namak Mandi' },
   trade_category: { type: String, default: 'Hardware & Tools' },
   phone: { type: String, default: '' },
-  community_opt_in: { type: Boolean, default: true },
+  community_opt_in: { type: Boolean, default: false },
   role: { type: String, default: 'trader' },
   created_at: { type: Date, default: Date.now }
 });

@@ -18,6 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const txModal = document.getElementById('tx-modal');
   const disputeEvidenceModal = document.getElementById('dispute-evidence-modal');
   const communitySupplierModal = document.getElementById('community-supplier-modal');
+const supplierTimelineModal = document.getElementById('supplier-timeline-modal');
+  const settingsModal = document.getElementById('settings-modal');
 
   // Forms
   const supplierForm = document.getElementById('supplier-form');
@@ -31,6 +33,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
   txHasDispute.addEventListener('change', () => {
     disputeFields.style.display = txHasDispute.checked ? 'block' : 'none';
+  });
+
+  // Delegated click handler for supplier cards/table — attached ONCE here,
+  // so re-rendering suppliers (cards or table) never re-binds or
+  // double-binds listeners on the same buttons.
+  document.addEventListener('click', (e) => {
+    const quickTxBtn = e.target.closest('.btn-quick-tx');
+    if (quickTxBtn) {
+      openTransactionModal(quickTxBtn.getAttribute('data-id'));
+      return;
+    }
+    
+    const communityBtn = e.target.closest('.btn-community-view');
+    if (communityBtn) {
+      openCommunitySupplierModal(communityBtn.getAttribute('data-id'));
+      return;
+    }
+    const timelineBtn = e.target.closest('.btn-timeline-view');
+if (timelineBtn) {
+   openSupplierTimelineModal(timelineBtn.getAttribute('data-id'));
+  return;
+}
+    const editBtn = e.target.closest('.btn-edit-supplier');
+    if (editBtn) {
+      editSupplier(editBtn.getAttribute('data-id'));
+      return;
+    }
+    const deleteBtn = e.target.closest('.btn-delete-supplier');
+    if (deleteBtn) {
+      deleteSupplier(deleteBtn.getAttribute('data-id'));
+      return;
+    }
   });
 
   // View Mode Switchers
@@ -130,6 +164,35 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.getElementById('btn-refresh').addEventListener('click', refreshAll);
+  document.getElementById('btn-settings').addEventListener('click', () => {
+  document.getElementById('settings-community-toggle').checked = !!(currentUser && currentUser.community_opt_in);
+  settingsModal.classList.add('active');
+});
+
+document.getElementById('btn-save-settings').addEventListener('click', async () => {
+  const enabled = document.getElementById('settings-community-toggle').checked;
+  const btn = document.getElementById('btn-save-settings');
+  btn.disabled = true;
+  try {
+    const res = await fetch('/api/auth/profile', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ community_opt_in: enabled })
+    });
+    const result = await res.json();
+    if (result.success) {
+      currentUser = result.user;
+      settingsModal.classList.remove('active');
+      refreshAll();
+    } else {
+      alert(result.message || 'Failed to save settings');
+    }
+  } catch (err) {
+    alert('Failed to save settings');
+  } finally {
+    btn.disabled = false;
+  }
+});
 
   // 1. Fetch Stats
   async function fetchStats() {
@@ -262,12 +325,15 @@ document.addEventListener('DOMContentLoaded', () => {
               <span>${sc.total_transactions} orders logged</span> · <span class="badge ${riskBadgeClass}" style="font-size: 0.68rem;">${sc.risk_status}</span>
             </div>
             <div style="display: flex; gap: 6px;">
-              <button class="btn btn-secondary btn-sm btn-community-view" data-id="${s.id}" title="View Blinded Community Network Score">
-                <i class="fa-solid fa-network-wired" style="color: #818cf8;"></i>
-              </button>
-              <button class="btn btn-emerald btn-sm btn-quick-tx" data-id="${s.id}" title="Log Delivery for this supplier">
-                <i class="fa-solid fa-plus"></i> Log
-              </button>
+  <button class="btn-icon btn-timeline-view" data-id="${s.id}" title="Dispute Timeline">
+    <i class="fa-solid fa-clock-rotate-left"></i>
+  </button>
+  <button class="btn btn-secondary btn-sm btn-community-view" data-id="${s.id}" title="View Blinded Community Network Score">
+    <i class="fa-solid fa-network-wired" style="color: #818cf8;"></i>
+  </button>
+  <button class="btn btn-emerald btn-sm btn-quick-tx" data-id="${s.id}" title="Log Delivery for this supplier">
+    <i class="fa-solid fa-plus"></i> Log
+  </button>
               <button class="btn-icon btn-edit-supplier" data-id="${s.id}" title="Edit Supplier">
                 <i class="fa-solid fa-pen-to-square"></i>
               </button>
@@ -279,8 +345,6 @@ document.addEventListener('DOMContentLoaded', () => {
         </div>
       `;
     }).join('');
-
-    attachSupplierEventListeners();
   }
 
   function renderSuppliersTable(suppliers) {
@@ -317,48 +381,19 @@ document.addEventListener('DOMContentLoaded', () => {
           <td><span class="badge ${riskBadgeClass}">${sc.risk_status}</span></td>
           <td>
             <div class="actions-cell">
-              <button class="btn btn-secondary btn-sm btn-community-view" data-id="${s.id}" title="Community Benchmark">
-                <i class="fa-solid fa-users" style="color: #818cf8;"></i>
-              </button>
-              <button class="btn-icon btn-edit-supplier" data-id="${s.id}"><i class="fa-solid fa-pen"></i></button>
-              <button class="btn-icon btn-delete-supplier" data-id="${s.id}" style="color: var(--accent-rose);"><i class="fa-solid fa-trash"></i></button>
-            </div>
+  <button class="btn-icon btn-timeline-view" data-id="${s.id}" title="Dispute Timeline">
+    <i class="fa-solid fa-clock-rotate-left"></i>
+  </button>
+  <button class="btn btn-secondary btn-sm btn-community-view" data-id="${s.id}" title="Community Benchmark">
+    <i class="fa-solid fa-users" style="color: #818cf8;"></i>
+  </button>
+  <button class="btn-icon btn-edit-supplier" data-id="${s.id}"><i class="fa-solid fa-pen"></i></button>
+  <button class="btn-icon btn-delete-supplier" data-id="${s.id}" style="color: var(--accent-rose);"><i class="fa-solid fa-trash"></i></button>
+</div>
           </td>
         </tr>
       `;
     }).join('');
-
-    attachSupplierEventListeners();
-  }
-
-  function attachSupplierEventListeners() {
-    document.querySelectorAll('.btn-quick-tx').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
-        openTransactionModal(id);
-      });
-    });
-
-    document.querySelectorAll('.btn-community-view').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
-        openCommunitySupplierModal(id);
-      });
-    });
-
-    document.querySelectorAll('.btn-edit-supplier').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
-        editSupplier(id);
-      });
-    });
-
-    document.querySelectorAll('.btn-delete-supplier').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const id = btn.getAttribute('data-id');
-        deleteSupplier(id);
-      });
-    });
   }
 
   function populateSupplierDropdowns(suppliers) {
@@ -578,6 +613,132 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('');
   }
 
+
+  function renderCommunityBenchmarks(benchmarks) {
+  communityBenchmarksBody.innerHTML = benchmarks.map(b => {
+    const gradeClass = `grade-${b.grade.replace('+', 'plus')}`;
+    return `
+      <tr>
+        <td><span style="font-weight: 700;">${escapeHtml(b.category)}</span></td>
+        <td><span style="font-family: monospace;">${b.sample_size} deliveries verified</span></td>
+        <td><span style="font-weight: 700; color: #818cf8;">${b.average_reliability}%</span></td>
+        <td><span style="font-weight: 700; color: var(--accent-cyan);">${b.punctuality_rate}%</span></td>
+        <td><span style="font-weight: 700; color: ${b.dispute_rate > 15 ? 'var(--accent-rose)' : 'inherit'};">${b.dispute_rate}%</span></td>
+        <td><span class="grade-badge ${gradeClass}" style="width: 28px; height: 28px; font-size: 0.85rem;">${b.grade}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// NEW FUNCTION — paste this here
+async function openSupplierTimelineModal(supplierId) {
+  supplierTimelineModal.classList.add('active');
+  const content = document.getElementById('supplier-timeline-content');
+  const nameEl = document.getElementById('timeline-supplier-name');
+  content.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading dispute history...</div>`;
+
+  try {
+    const res = await fetch(`/api/suppliers/${supplierId}`);
+    const result = await res.json();
+    if (!result.success) {
+      content.innerHTML = `<div style="color:var(--accent-rose); padding:20px; text-align:center;">Failed to load supplier timeline.</div>`;
+      return;
+    }
+
+    const supplier = result.data;
+    nameEl.textContent = `${supplier.name} · Evidence record, most recent first`;
+
+    const disputes = (supplier.transactions || []).filter(t => t.has_dispute === 1);
+
+    if (disputes.length === 0) {
+      content.innerHTML = `
+        <div style="text-align:center; padding:40px; color:var(--text-muted);">
+          <i class="fa-solid fa-circle-check" style="font-size:2rem; color:var(--accent-emerald); margin-bottom:10px;"></i>
+          <h3>No disputes on record</h3>
+          <p style="font-size:0.85rem; margin-top:6px;">Every logged delivery from this supplier has been clean so far.</p>
+        </div>`;
+      return;
+    }
+
+    content.innerHTML = disputes.map(t => `
+      <div style="border-left: 3px solid var(--accent-rose); padding: 10px 14px; margin-bottom: 12px; background: var(--bg-card); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:700;">${t.actual_date}</span>
+          <span class="badge ${t.dispute_status === 'Resolved' ? 'badge-dispute-resolved' : 'badge-dispute-open'}">${escapeHtml(t.dispute_status || 'Open')}</span>
+        </div>
+        <div style="font-size:0.85rem; margin-top:4px;">${escapeHtml(t.item_description)} — ${t.quantity_received}/${t.quantity_ordered} received</div>
+        <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:4px;">Reason: ${escapeHtml(t.dispute_reason || 'Not specified')}</div>
+        ${t.dispute_notes ? `<div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px; font-style:italic;">"${escapeHtml(t.dispute_notes)}"</div>` : ''}
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Timeline error:', err);
+    content.innerHTML = `<div style="color:var(--accent-rose); padding:20px; text-align:center;">Failed to load supplier timeline.</div>`;
+  }
+}
+function renderCommunityBenchmarks(benchmarks) {
+  communityBenchmarksBody.innerHTML = benchmarks.map(b => {
+    const gradeClass = `grade-${b.grade.replace('+', 'plus')}`;
+    return `
+      <tr>
+        <td><span style="font-weight: 700;">${escapeHtml(b.category)}</span></td>
+        <td><span style="font-family: monospace;">${b.sample_size} deliveries verified</span></td>
+        <td><span style="font-weight: 700; color: #818cf8;">${b.average_reliability}%</span></td>
+        <td><span style="font-weight: 700; color: var(--accent-cyan);">${b.punctuality_rate}%</span></td>
+        <td><span style="font-weight: 700; color: ${b.dispute_rate > 15 ? 'var(--accent-rose)' : 'inherit'};">${b.dispute_rate}%</span></td>
+        <td><span class="grade-badge ${gradeClass}" style="width: 28px; height: 28px; font-size: 0.85rem;">${b.grade}</span></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+// NEW FUNCTION — paste this here
+async function openSupplierTimelineModal(supplierId) {
+  supplierTimelineModal.classList.add('active');
+  const content = document.getElementById('supplier-timeline-content');
+  const nameEl = document.getElementById('timeline-supplier-name');
+  content.innerHTML = `<div style="text-align:center; padding:40px; color:var(--text-muted);"><i class="fa-solid fa-spinner fa-spin"></i> Loading dispute history...</div>`;
+
+  try {
+    const res = await fetch(`/api/suppliers/${supplierId}`);
+    const result = await res.json();
+    if (!result.success) {
+      content.innerHTML = `<div style="color:var(--accent-rose); padding:20px; text-align:center;">Failed to load supplier timeline.</div>`;
+      return;
+    }
+
+    const supplier = result.data;
+    nameEl.textContent = `${supplier.name} · Evidence record, most recent first`;
+
+    const disputes = (supplier.transactions || []).filter(t => t.has_dispute === 1);
+
+    if (disputes.length === 0) {
+      content.innerHTML = `
+        <div style="text-align:center; padding:40px; color:var(--text-muted);">
+          <i class="fa-solid fa-circle-check" style="font-size:2rem; color:var(--accent-emerald); margin-bottom:10px;"></i>
+          <h3>No disputes on record</h3>
+          <p style="font-size:0.85rem; margin-top:6px;">Every logged delivery from this supplier has been clean so far.</p>
+        </div>`;
+      return;
+    }
+
+    content.innerHTML = disputes.map(t => `
+      <div style="border-left: 3px solid var(--accent-rose); padding: 10px 14px; margin-bottom: 12px; background: var(--bg-card); border-radius: 0 var(--radius-sm) var(--radius-sm) 0;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-weight:700;">${t.actual_date}</span>
+          <span class="badge ${t.dispute_status === 'Resolved' ? 'badge-dispute-resolved' : 'badge-dispute-open'}">${escapeHtml(t.dispute_status || 'Open')}</span>
+        </div>
+        <div style="font-size:0.85rem; margin-top:4px;">${escapeHtml(t.item_description)} — ${t.quantity_received}/${t.quantity_ordered} received</div>
+        <div style="font-size:0.8rem; color:var(--text-secondary); margin-top:4px;">Reason: ${escapeHtml(t.dispute_reason || 'Not specified')}</div>
+        ${t.dispute_notes ? `<div style="font-size:0.8rem; color:var(--text-muted); margin-top:4px; font-style:italic;">"${escapeHtml(t.dispute_notes)}"</div>` : ''}
+      </div>
+    `).join('');
+  } catch (err) {
+    console.error('Timeline error:', err);
+    content.innerHTML = `<div style="color:var(--accent-rose); padding:20px; text-align:center;">Failed to load supplier timeline.</div>`;
+  }
+}
+
   // 6. Community Supplier Benchmark Modal
   async function openCommunitySupplierModal(supplierId) {
     communitySupplierModal.classList.add('active');
@@ -589,20 +750,20 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await res.json();
 
       if (!result.success || !result.data.has_community_data) {
-  const d = result.data;
-  const message = d && d.locked
-    ? `You've logged <strong>${d.contributions_logged}</strong> transactions with this supplier. Log <strong>${d.contributions_needed} more</strong> to unlock the community network score (30 transactions unlocks it).`
-    : `You are the first business in the network to score <strong>${escapeHtml(d ? d.supplier_name : 'this supplier')}</strong>. As other traders in your market add deliveries, aggregated scores will appear here automatically.`;
+        const d = result.data;
+        const message = d && d.locked
+          ? `You've logged <strong>${d.contributions_logged}</strong> transactions with this supplier. Log <strong>${d.contributions_needed} more</strong> to unlock the community network score (30 transactions unlocks it).`
+          : `You are the first business in the network to score <strong>${escapeHtml(d ? d.supplier_name : 'this supplier')}</strong>. As other traders in your market add deliveries, aggregated scores will appear here automatically.`;
 
-  content.innerHTML = `
-    <div style="text-align: center; padding: 30px;">
-      <i class="fa-solid fa-user-shield" style="font-size: 2.5rem; color: #818cf8; margin-bottom: 12px;"></i>
-      <h3>${d && d.locked ? 'Keep Logging to Unlock' : 'No Community Pool Records Yet'}</h3>
-      <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">${message}</p>
-    </div>
-  `;
-  return;
-}
+        content.innerHTML = `
+          <div style="text-align: center; padding: 30px;">
+            <i class="fa-solid fa-user-shield" style="font-size: 2.5rem; color: #818cf8; margin-bottom: 12px;"></i>
+            <h3>${d && d.locked ? 'Keep Logging to Unlock' : 'No Community Pool Records Yet'}</h3>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 6px;">${message}</p>
+          </div>
+        `;
+        return;
+      }
 
       const d = result.data;
       const comm = d.communityScorecard;
@@ -663,57 +824,82 @@ document.addEventListener('DOMContentLoaded', () => {
   // 7. Dispute Notice AI Formatter
   async function generateDisputeNotice(transactionId) {
     disputeEvidenceModal.classList.add('active');
+
     const textArea = document.getElementById('dispute-evidence-text');
     const copyConfirm = document.getElementById('copy-confirm');
+
     copyConfirm.style.display = 'none';
     textArea.value = 'Generating structured reconciliation notice...';
 
     try {
-      const res = await fetch('/api/ai/dispute-summary', {
+      const res = await fetch('/api/ai/dispute-notice', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transaction_id: transactionId })
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          transaction_id: transactionId
+        })
       });
+
       const result = await res.json();
+
       if (result.success) {
-        textArea.value = result.data.summaryText;
+        textArea.value = result.data.formatted_message;
       } else {
         textArea.value = 'Error generating notice.';
       }
+
     } catch (err) {
-      textArea.value = 'Failed to generate dispute notice.';
+      console.error('Dispute notice generation error:', err);
+      textArea.value = 'Failed to generate notice.';
     }
   }
 
+  // Copy Evidence Button
   document.getElementById('btn-copy-evidence').addEventListener('click', () => {
     const text = document.getElementById('dispute-evidence-text').value;
+
     navigator.clipboard.writeText(text).then(() => {
       const copyConfirm = document.getElementById('copy-confirm');
+
       copyConfirm.style.display = 'inline-block';
-      setTimeout(() => copyConfirm.style.display = 'none', 3000);
+
+      setTimeout(() => {
+        copyConfirm.style.display = 'none';
+      }, 3000);
+    }).catch(err => {
+      console.error('Copy failed:', err);
     });
   });
 
   // Modal Handlers & Actions
   function openTransactionModal(preselectedSupplierId = '') {
     txForm.reset();
+
     const today = new Date().toISOString().split('T')[0];
+
     document.getElementById('tx-date-promised').value = today;
     document.getElementById('tx-date-actual').value = today;
     document.getElementById('tx-quality-rating').value = '5';
+
     txHasDispute.checked = false;
     disputeFields.style.display = 'none';
 
     if (preselectedSupplierId) {
       txSupplierSelect.value = preselectedSupplierId;
     }
+
     txModal.classList.add('active');
   }
 
-  document.getElementById('btn-open-tx-modal').addEventListener('click', () => openTransactionModal());
+  document.getElementById('btn-open-tx-modal').addEventListener('click', () => {
+    openTransactionModal();
+  });
 
   txForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+
     const btnSave = document.getElementById('btn-save-tx');
     btnSave.disabled = true;
 
@@ -736,9 +922,12 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch('/api/transactions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json'
+        },
         body: JSON.stringify(payload)
       });
+
       const result = await res.json();
 
       if (result.success) {
@@ -747,8 +936,11 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         alert(result.message || 'Error recording transaction');
       }
+
     } catch (err) {
+      console.error(err);
       alert('Failed to submit transaction data');
+
     } finally {
       btnSave.disabled = false;
     }

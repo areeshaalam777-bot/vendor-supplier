@@ -53,6 +53,14 @@
             <div class="user-market" id="user-location-tag">Namak Mandi, Peshawar</div>
           </div>
         </div>
+
+        <!-- ADD before the logout button -->
+<button id="btn-settings" class="btn-icon" title="Privacy & Community Settings">
+  <i class="fa-solid fa-gear"></i>
+</button>
+<button id="btn-logout" class="btn-icon" title="Log out">
+  <i class="fa-solid fa-right-from-bracket"></i>
+</button>
         <button id="btn-logout" class="btn-icon" title="Log out">
           <i class="fa-solid fa-right-from-bracket"></i>
         </button>
@@ -547,7 +555,50 @@
       </div>
     </div>
   </div>
+ <!-- Settings Modal -->
+<div id="settings-modal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div>
+        <h3><i class="fa-solid fa-gear"></i> Privacy & Community Settings</h3>
+        <p style="font-size: 0.78rem; color: var(--text-muted);">Control what leaves your private ledger</p>
+      </div>
+      <button class="modal-close" data-close="settings-modal">&times;</button>
+    </div>
+    <div>
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; background: var(--bg-card); border:1px solid var(--border-color); border-radius: var(--radius-sm); padding:16px;">
+        <div>
+          <div style="font-weight:700;">Contribute to Community Intelligence</div>
+          <p style="font-size:0.78rem; color: var(--text-muted); margin-top:4px; max-width:340px;">
+            When ON, suppliers you've logged 30+ transactions with are pooled — blinded, never with your name attached — into the network aggregate other traders can see. Turn this OFF any time to stop contributing immediately.
+          </p>
+        </div>
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; white-space:nowrap;">
+          <input type="checkbox" id="settings-community-toggle" style="width:18px; height:18px; cursor:pointer;">
+          <span style="font-size:0.85rem; font-weight:600;">Enabled</span>
+        </label>
+      </div>
+      <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:18px;">
+        <button class="btn btn-secondary" data-close="settings-modal">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-settings">Save Settings</button>
+      </div>
+    </div>
+  </div>
+</div>
 
-  <script src="/js/dashboard.js"></script>
+<!-- Supplier Dispute Timeline Modal -->
+<div id="supplier-timeline-modal" class="modal-overlay">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div>
+        <h3><i class="fa-solid fa-clock-rotate-left"></i> Dispute Timeline</h3>
+        <p style="font-size: 0.78rem; color: var(--text-muted);" id="timeline-supplier-name">Supplier</p>
+      </div>
+      <button class="modal-close" data-close="supplier-timeline-modal">&times;</button>
+    </div>
+    <div id="supplier-timeline-content"></div>
+  </div>
+</div>
+<script src="/js/dashboard.js"></script>
 </body>
 </html>

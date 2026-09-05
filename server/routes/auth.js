@@ -42,7 +42,7 @@ router.post('/register', async (req, res) => {
       market_area: market_area || 'General Market',
       trade_category: trade_category || 'Hardware & Tools',
       phone: phone || '',
-      community_opt_in: true,
+      community_opt_in: false,
       role: 'trader'
     });
 
