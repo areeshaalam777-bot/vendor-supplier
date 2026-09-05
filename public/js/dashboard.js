@@ -255,6 +255,17 @@ document.addEventListener('DOMContentLoaded', () => {
       document.getElementById('user-location-tag').textContent = `${currentUser.market_area || 'Market'}, ${currentUser.city || 'Pakistan'}`;
       document.getElementById('avatar-initials').textContent = (currentUser.business_name || currentUser.username).charAt(0).toUpperCase();
 
+      const roleBadgeEl = document.getElementById('user-role-badge');
+      if (roleBadgeEl) {
+        if (currentUser.role === 'admin' || currentUser.username === 'admin') {
+          roleBadgeEl.className = 'badge-role-admin';
+          roleBadgeEl.innerHTML = '<i class="fa-solid fa-crown"></i> Admin';
+        } else {
+          roleBadgeEl.className = 'badge-role-trader';
+          roleBadgeEl.innerHTML = '<i class="fa-solid fa-store"></i> Trader';
+        }
+      }
+
       // Set default dates
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('tx-date-promised').value = today;
@@ -446,20 +457,20 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
             </div>
           </div>
 
-          <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between;">
-            <div style="font-size: 0.75rem; color: var(--text-muted);">
+          <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
+            <div style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;">
               <span>${sc.total_transactions} orders logged</span> · <span class="badge ${riskBadgeClass}" style="font-size: 0.68rem;">${sc.risk_status}</span>
             </div>
-            <div style="display: flex; gap: 6px;">
-  <button class="btn-icon btn-timeline-view" data-id="${s.id}" title="Dispute Timeline">
-    <i class="fa-solid fa-clock-rotate-left"></i>
-  </button>
-  <button class="btn btn-secondary btn-sm btn-community-view" data-id="${s.id}" title="View Blinded Community Network Score">
-    <i class="fa-solid fa-network-wired" style="color: #818cf8;"></i>
-  </button>
-  <button class="btn btn-emerald btn-sm btn-quick-tx" data-id="${s.id}" title="Log Delivery for this supplier">
-    <i class="fa-solid fa-plus"></i> Log
-  </button>
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: nowrap;">
+              <button class="btn-icon btn-timeline-view" data-id="${s.id}" title="Dispute Timeline">
+                <i class="fa-solid fa-clock-rotate-left"></i>
+              </button>
+              <button class="btn btn-secondary btn-sm btn-community-view" data-id="${s.id}" title="View Blinded Community Network Score">
+                <i class="fa-solid fa-network-wired" style="color: #818cf8;"></i>
+              </button>
+              <button class="btn btn-emerald btn-sm btn-quick-tx" data-id="${s.id}" title="Log Delivery for this supplier">
+                <i class="fa-solid fa-plus"></i> Log Delivery
+              </button>
               <button class="btn-icon btn-edit-supplier" data-id="${s.id}" title="Edit Supplier">
                 <i class="fa-solid fa-pen-to-square"></i>
               </button>
@@ -679,7 +690,7 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
             <div class="actions-cell">
               ${t.has_dispute === 1 ? `
                 <button class="btn btn-emerald btn-sm btn-format-dispute" data-id="${t.id}" title="Generate WhatsApp Dispute Evidence Record">
-                  <i class="fa-brands fa-whatsapp"></i> Notice
+                  <i class="fa-brands fa-whatsapp"></i> Dispute Notice
                 </button>
               ` : ''}
               <button class="btn-icon btn-delete-tx" data-id="${t.id}" style="color: var(--accent-rose);" title="Delete Record">

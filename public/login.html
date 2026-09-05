@@ -23,34 +23,43 @@
         <button type="button" class="auth-tab-btn" id="tab-btn-register">Register Business</button>
       </div>
 
-      <div id="auth-alert" class="alert alert-danger"></div>
+      <div id="auth-alert" class="alert alert-danger" style="display: none;"></div>
 
       <!-- Login Form -->
       <form id="login-form">
         <div class="form-group">
           <label for="login-username">Username</label>
-          <input 
-            type="text" 
-            id="login-username" 
-            name="username" 
-            class="form-control" 
-            placeholder="e.g. admin" 
-            required 
-            autocomplete="username"
-          >
+          <div class="input-with-icon">
+            <i class="fa-solid fa-user input-icon"></i>
+            <input 
+              type="text" 
+              id="login-username" 
+              name="username" 
+              class="form-control" 
+              placeholder="e.g. admin" 
+              required 
+              autocomplete="username"
+            >
+          </div>
         </div>
 
         <div class="form-group">
           <label for="login-password">Password</label>
-          <input 
-            type="password" 
-            id="login-password" 
-            name="password" 
-            class="form-control" 
-            placeholder="••••••••" 
-            required 
-            autocomplete="current-password"
-          >
+          <div class="input-with-icon password-wrapper">
+            <i class="fa-solid fa-lock input-icon"></i>
+            <input 
+              type="password" 
+              id="login-password" 
+              name="password" 
+              class="form-control" 
+              placeholder="••••••••" 
+              required 
+              autocomplete="current-password"
+            >
+            <button type="button" class="btn-toggle-password" id="btn-toggle-login-pwd" title="Show / Hide Password" aria-label="Toggle password visibility">
+              <i class="fa-solid fa-eye" id="toggle-login-icon"></i>
+            </button>
+          </div>
         </div>
 
         <button type="submit" id="btn-login-submit" class="btn btn-primary" style="width: 100%;">
@@ -113,11 +122,20 @@
         <div class="form-row">
           <div class="form-group">
             <label for="reg-username">Username *</label>
-            <input type="text" id="reg-username" class="form-control" placeholder="Choose username" required autocomplete="username">
+            <div class="input-with-icon">
+              <i class="fa-solid fa-user input-icon"></i>
+              <input type="text" id="reg-username" class="form-control" placeholder="Choose username" required autocomplete="username">
+            </div>
           </div>
           <div class="form-group">
             <label for="reg-password">Password *</label>
-            <input type="password" id="reg-password" class="form-control" placeholder="Create password" required autocomplete="new-password">
+            <div class="input-with-icon password-wrapper">
+              <i class="fa-solid fa-lock input-icon"></i>
+              <input type="password" id="reg-password" class="form-control" placeholder="Create password" required autocomplete="new-password">
+              <button type="button" class="btn-toggle-password" id="btn-toggle-reg-pwd" title="Show / Hide Password" aria-label="Toggle password visibility">
+                <i class="fa-solid fa-eye" id="toggle-reg-icon"></i>
+              </button>
+            </div>
           </div>
         </div>
 

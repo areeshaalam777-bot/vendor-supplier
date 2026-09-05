@@ -31,10 +31,8 @@ app.use(async (req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Trust proxy for secure cookies / Vercel deployment
-if (process.env.NODE_ENV === 'production' || process.env.VERCEL) {
-  app.set('trust proxy', 1);
-}
+// Always enable trust proxy so secure cookies work properly behind proxies & on Vercel
+app.set('trust proxy', 1);
 
 // Session configuration
 const sessionConfig = {
@@ -44,7 +42,7 @@ const sessionConfig = {
   cookie: {
     maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production' && !process.env.VERCEL_DEV,
+    secure: 'auto',
     sameSite: 'lax'
   }
 };

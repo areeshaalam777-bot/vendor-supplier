@@ -119,6 +119,11 @@ a:hover {
   transition: var(--transition);
   text-decoration: none;
   letter-spacing: -0.01em;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.25;
+  text-align: center;
+  box-sizing: border-box;
 }
 
 .btn-primary {
@@ -180,6 +185,8 @@ a:hover {
 .btn-sm {
   padding: 7px 14px;
   font-size: 0.82rem;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .btn-icon {
@@ -193,6 +200,8 @@ a:hover {
   align-items: center;
   justify-content: center;
   transition: var(--transition);
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .btn-icon:hover {
@@ -564,6 +573,86 @@ select optgroup {
   background: #ECFDF5;
   border: 1.5px solid #34D399;
   color: #047857;
+}
+
+.alert-warning {
+  background: #FFFBEB;
+  border: 1.5px solid #FDE68A;
+  color: #B45309;
+}
+
+/* ==================== Input with Icons & Password Toggle ==================== */
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.input-with-icon .input-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.input-with-icon .form-control {
+  padding-left: 36px;
+}
+
+.password-wrapper .form-control {
+  padding-right: 40px;
+}
+
+.btn-toggle-password {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  padding: 6px 8px;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition);
+  z-index: 3;
+}
+
+.btn-toggle-password:hover {
+  color: var(--text-primary);
+  background: rgba(137, 168, 178, 0.15);
+}
+
+/* Role Badges */
+.badge-role-admin {
+  background: #FEF3C7;
+  color: #92400E;
+  border: 1.5px solid #FCD34D;
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge-role-trader {
+  background: var(--color-sand);
+  color: var(--text-secondary);
+  border: 1px solid var(--color-mist);
+  font-size: 0.72rem;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 /* ==================== Dashboard Layout ==================== */
@@ -1007,10 +1096,18 @@ tr:hover td {
 }
 
 .actions-cell {
-  display: flex;
+  display: inline-flex;
+  align-items: center;
   gap: 6px;
   justify-content: flex-end;
   flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.actions-cell .btn,
+.actions-cell .btn-icon {
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 /* ==================== Supplier Cards Grid View ==================== */
@@ -1483,17 +1580,20 @@ tr:hover td {
   }
   .topbar-actions {
     width: 100%;
-    display: grid;
-    grid-template-columns: auto 1fr 1fr;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     gap: 8px;
   }
   .topbar-actions .btn {
-    padding: 8px 10px;
-    font-size: 0.78rem;
+    padding: 8px 14px;
+    font-size: 0.82rem;
     white-space: nowrap;
+    flex: 1 1 auto;
+    min-width: max-content;
   }
   #btn-open-tx-modal .btn-text {
-    font-size: 0.78rem;
+    font-size: 0.82rem;
   }
   .stats-grid {
     grid-template-columns: 1fr 1fr;
@@ -1544,6 +1644,7 @@ tr:hover td {
   }
   .modal-footer .btn {
     width: 100%;
+    white-space: nowrap;
   }
   .auth-card {
     padding: 24px 20px;
@@ -1560,7 +1661,12 @@ tr:hover td {
     grid-template-columns: 1fr;
   }
   .topbar-actions {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  .topbar-actions .btn {
+    width: 100%;
   }
   .actions-cell {
     gap: 4px;

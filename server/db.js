@@ -29,9 +29,9 @@ async function connectDB() {
 
 async function seedInitialData() {
   try {
-    const adminCheck = await User.findOne({ username: 'admin' });
+    let adminCheck = await User.findOne({ username: 'admin' });
+    const hashedPassword = bcrypt.hashSync('admin123', 10);
     if (!adminCheck) {
-      const hashedPassword = bcrypt.hashSync('admin123', 10);
       const defaultUser = await User.create({
         username: 'admin',
         email: 'admin@scorecard.pk',
@@ -43,10 +43,10 @@ async function seedInitialData() {
         trade_category: 'Hardware & Tools',
         phone: '0300-5912345',
         community_opt_in: true,
-        role: 'trader'
+        role: 'admin'
       });
 
-      console.log('[MongoDB] Created default trader account: admin / admin123');
+      console.log('[MongoDB] Created default admin account: admin / admin123');
 
       // Seed suppliers for admin
       const s1 = await Supplier.create({
@@ -249,6 +249,12 @@ async function seedInitialData() {
       }
 
       console.log('[MongoDB] Seeded initial Pakistani SME suppliers and community benchmark records.');
+    } else {
+      if (adminCheck.role !== 'admin') {
+        adminCheck.role = 'admin';
+        await adminCheck.save();
+        console.log('[MongoDB] Updated existing admin role to "admin"');
+      }
     }
   } catch (err) {
     console.error('[MongoDB] Seeding error:', err.message);

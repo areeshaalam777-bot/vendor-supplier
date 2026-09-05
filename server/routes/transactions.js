@@ -142,7 +142,7 @@ router.put('/:id', async (req, res) => {
         ...(dispute_notes !== undefined && { dispute_notes }),
         ...(quality_rating !== undefined && { quality_rating })
       },
-      { new: true }
+      { returnDocument: 'after' }
     );
 
     if (!updated) {

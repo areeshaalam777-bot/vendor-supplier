@@ -171,7 +171,7 @@ router.put('/profile', async (req, res) => {
         ...(phone !== undefined && { phone }),
         ...(community_opt_in !== undefined && { community_opt_in })
       },
-      { new: true }
+      { returnDocument: 'after' }
     ).select('-password');
 
     req.session.user = {

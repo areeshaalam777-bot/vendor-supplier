@@ -7,6 +7,31 @@ document.addEventListener('DOMContentLoaded', () => {
   const btnLoginSubmit = document.getElementById('btn-login-submit');
   const btnRegSubmit = document.getElementById('btn-reg-submit');
 
+  // Password visibility toggles
+  const btnToggleLoginPwd = document.getElementById('btn-toggle-login-pwd');
+  const toggleLoginIcon = document.getElementById('toggle-login-icon');
+  const loginPasswordInput = document.getElementById('login-password');
+
+  const btnToggleRegPwd = document.getElementById('btn-toggle-reg-pwd');
+  const toggleRegIcon = document.getElementById('toggle-reg-icon');
+  const regPasswordInput = document.getElementById('reg-password');
+
+  if (btnToggleLoginPwd && loginPasswordInput) {
+    btnToggleLoginPwd.addEventListener('click', () => {
+      const isPwd = loginPasswordInput.type === 'password';
+      loginPasswordInput.type = isPwd ? 'text' : 'password';
+      toggleLoginIcon.className = isPwd ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+    });
+  }
+
+  if (btnToggleRegPwd && regPasswordInput) {
+    btnToggleRegPwd.addEventListener('click', () => {
+      const isPwd = regPasswordInput.type === 'password';
+      regPasswordInput.type = isPwd ? 'text' : 'password';
+      toggleRegIcon.className = isPwd ? 'fa-solid fa-eye-slash' : 'fa-solid fa-eye';
+    });
+  }
+
   // Tab switcher
   tabBtnLogin.addEventListener('click', () => {
     tabBtnLogin.classList.add('active');
@@ -34,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     })
     .catch(() => {});
 
-  // Handle Login
+  // Handle Login Form Submit
   loginForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -42,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const password = document.getElementById('login-password').value;
 
     if (!username || !password) {
-      showAlert('Please enter both username and password.');
+      showAlert('Please enter both username and password.', 'danger');
       return;
     }
 
@@ -60,20 +85,23 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        window.location.href = '/dashboard.html';
+        showAlert('Authentication successful! Loading dashboard...', 'success');
+        setTimeout(() => {
+          window.location.href = '/dashboard.html';
+        }, 300);
       } else {
-        showAlert(result.message || 'Invalid username or password.');
+        showAlert(result.message || 'Invalid username or password.', 'danger');
       }
     } catch (err) {
       console.error('Login error:', err);
-      showAlert('Unable to connect to server. Please ensure server is running.');
+      showAlert('Unable to connect to server. Please check your connection and ensure the server is active.', 'danger');
     } finally {
       btnLoginSubmit.disabled = false;
       btnLoginSubmit.innerHTML = `<span>Access Private Scorecard</span> <i class="fa-solid fa-arrow-right"></i>`;
     }
   });
 
-  // Handle Registration
+  // Handle Registration Form Submit
   registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
 
@@ -89,7 +117,7 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     if (!payload.business_name || !payload.username || !payload.password) {
-      showAlert('Please fill in all required fields.');
+      showAlert('Please fill in all required fields (Business Name, Username, Password).', 'danger');
       return;
     }
 
@@ -107,21 +135,25 @@ document.addEventListener('DOMContentLoaded', () => {
       const result = await response.json();
 
       if (response.ok && result.success) {
-        window.location.href = '/dashboard.html';
+        showAlert('Account created successfully! Loading your scorecard ledger...', 'success');
+        setTimeout(() => {
+          window.location.href = '/dashboard.html';
+        }, 400);
       } else {
-        showAlert(result.message || 'Failed to create business account.');
+        showAlert(result.message || 'Failed to create business account.', 'danger');
       }
     } catch (err) {
       console.error('Registration error:', err);
-      showAlert('Connection error. Please try again.');
+      showAlert('Connection error. Please try again.', 'danger');
     } finally {
       btnRegSubmit.disabled = false;
       btnRegSubmit.innerHTML = `<span>Register Business & Start Logging</span> <i class="fa-solid fa-check"></i>`;
     }
   });
 
-  function showAlert(msg) {
+  function showAlert(msg, type = 'danger') {
     authAlert.textContent = msg;
+    authAlert.className = `alert alert-${type}`;
     authAlert.style.display = 'block';
   }
 });

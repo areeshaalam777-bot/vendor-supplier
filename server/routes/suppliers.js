@@ -196,7 +196,7 @@ router.put('/:id', async (req, res) => {
         ...(payment_terms !== undefined && { payment_terms }),
         ...(notes !== undefined && { notes: notes.trim() })
       },
-      { new: true }
+      { returnDocument: 'after' }
     ).lean();
 
     if (!updated) {
