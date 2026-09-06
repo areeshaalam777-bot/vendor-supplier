@@ -287,7 +287,42 @@ document.addEventListener('DOMContentLoaded', () => {
     ]);
   }
 
-  document.getElementById('btn-refresh').addEventListener('click', refreshAll);
+  const btnRefresh = document.getElementById('btn-refresh');
+  const refreshIcon = btnRefresh ? btnRefresh.querySelector('i') : null;
+
+  async function handleManualRefresh() {
+    if (btnRefresh) btnRefresh.disabled = true;
+    if (refreshIcon) refreshIcon.classList.add('fa-spin');
+    const startTime = Date.now();
+
+    try {
+      await refreshAll();
+      const elapsed = Date.now() - startTime;
+      if (elapsed < 400) {
+        await new Promise(resolve => setTimeout(resolve, 400 - elapsed));
+      }
+      showToast({
+        title: 'Data Refreshed',
+        message: 'All supplier scorecards and records are up to date.',
+        type: 'info',
+        duration: 2200
+      });
+    } catch (err) {
+      console.error('Manual refresh error:', err);
+      showToast({
+        title: 'Refresh Error',
+        message: 'Failed to refresh some data.',
+        type: 'error'
+      });
+    } finally {
+      if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+      if (btnRefresh) btnRefresh.disabled = false;
+    }
+  }
+
+  if (btnRefresh) {
+    btnRefresh.addEventListener('click', handleManualRefresh);
+  }
   document.getElementById('btn-settings').addEventListener('click', () => {
   document.getElementById('settings-community-toggle').checked = !!(currentUser && currentUser.community_opt_in);
   settingsModal.classList.add('active');
