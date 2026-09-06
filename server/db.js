@@ -8,25 +8,37 @@ const Transaction = require('./models/Transaction');
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/supplier_scorecard';
 
-let isConnected = false;
-
-async function connectDB() {
-  if (isConnected) {
-    return;
-  }
-
-  try {
-    const db = await mongoose.connect(MONGODB_URI, {
-      serverSelectionTimeoutMS: 8000,
-    });
-    isConnected = db.connections[0].readyState === 1;
-    console.log('[MongoDB] Connected successfully to database');
-    await seedInitialData();
-  } catch (err) {
-    console.error('[MongoDB] Connection error:', err.message);
-  }
+// Serverless-safe connection caching: reuse a single connection PROMISE across
+// concurrent invocations in the same warm container, instead of letting every
+// request race to call mongoose.connect() independently — that race is what
+// causes "Operation `x.findOne()` buffering timed out" errors on Vercel.
+let cached = global._mongooseConn;
+if (!cached) {
+  cached = global._mongooseConn = { conn: null, promise: null };
 }
 
+async function connectDB() {
+  if (cached.conn) {
+    return cached.conn;
+  }
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(MONGODB_URI, {
+      serverSelectionTimeoutMS: 8000,
+    }).then(async (m) => {
+      console.log('[MongoDB] Connected successfully to database');
+      await seedInitialData();
+      return m;
+    }).catch((err) => {
+      cached.promise = null; // clear so the NEXT request can retry, instead of staying stuck forever
+      console.error('[MongoDB] Connection error:', err.message);
+      throw err;
+    });
+  }
+
+  cached.conn = await cached.promise;
+  return cached.conn;
+}
 async function seedInitialData() {
   try {
     let adminCheck = await User.findOne({ username: 'admin' });

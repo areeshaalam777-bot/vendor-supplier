@@ -21,10 +21,11 @@ const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/suppli
 app.use(async (req, res, next) => {
   try {
     await connectDB();
+    next();
   } catch (err) {
-    console.error('DB connect middleware error:', err);
+    console.error('DB connect middleware error:', err.message);
+    res.status(503).json({ success: false, message: 'Database temporarily unavailable. Please try again in a moment.' });
   }
-  next();
 });
 
 // Parsers
@@ -77,10 +78,25 @@ app.use((req, res) => {
 });
 
 // Start listening if not in Vercel serverless environment
+// adds visible error handling for common startup failures
 if (process.env.NODE_ENV !== 'test' && !process.env.VERCEL) {
+  if (!process.env.MONGODB_URI) {
+    console.warn('⚠️  No MONGODB_URI found in .env — check the file exists and is in the project root.');
+  }
+
   connectDB().then(() => {
-    app.listen(PORT, () => {
+    const server = app.listen(PORT, () => {
       console.log(`🚀 Scorecard Server running on http://localhost:${PORT}`);
+    });
+
+    server.on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.error(`❌ Port ${PORT} is already in use. Another server (maybe an old one you forgot to stop) is running there.`);
+        console.error(`   Windows fix: netstat -ano | findstr :${PORT}   then   taskkill /PID <the number> /F`);
+      } else {
+        console.error('❌ Server failed to start:', err.message);
+      }
+      process.exit(1);
     });
   });
 }
