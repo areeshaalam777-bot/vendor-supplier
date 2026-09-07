@@ -289,10 +289,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const btnRefresh = document.getElementById('btn-refresh');
   const refreshIcon = btnRefresh ? btnRefresh.querySelector('i') : null;
+  const btnSidebarRefresh = document.getElementById('btn-sidebar-refresh');
+  const sidebarRefreshIcon = btnSidebarRefresh ? btnSidebarRefresh.querySelector('i') : null;
 
   async function handleManualRefresh() {
     if (btnRefresh) btnRefresh.disabled = true;
+    if (btnSidebarRefresh) btnSidebarRefresh.disabled = true;
     if (refreshIcon) refreshIcon.classList.add('fa-spin');
+    if (sidebarRefreshIcon) sidebarRefreshIcon.classList.add('fa-spin');
     const startTime = Date.now();
 
     try {
@@ -316,12 +320,20 @@ document.addEventListener('DOMContentLoaded', () => {
       });
     } finally {
       if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+      if (sidebarRefreshIcon) sidebarRefreshIcon.classList.remove('fa-spin');
       if (btnRefresh) btnRefresh.disabled = false;
+      if (btnSidebarRefresh) btnSidebarRefresh.disabled = false;
     }
   }
 
   if (btnRefresh) {
     btnRefresh.addEventListener('click', handleManualRefresh);
+  }
+  if (btnSidebarRefresh) {
+    btnSidebarRefresh.addEventListener('click', () => {
+      closeMobileSidebar();
+      handleManualRefresh();
+    });
   }
   document.getElementById('btn-settings').addEventListener('click', () => {
   document.getElementById('settings-community-toggle').checked = !!(currentUser && currentUser.community_opt_in);
@@ -987,9 +999,19 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
     txModal.classList.add('active');
   }
 
-  document.getElementById('btn-open-tx-modal').addEventListener('click', () => {
-    openTransactionModal();
-  });
+  const btnOpenTxModal = document.getElementById('btn-open-tx-modal');
+  if (btnOpenTxModal) {
+    btnOpenTxModal.addEventListener('click', () => {
+      openTransactionModal();
+    });
+  }
+  const btnSidebarTx = document.getElementById('btn-sidebar-tx');
+  if (btnSidebarTx) {
+    btnSidebarTx.addEventListener('click', () => {
+      openTransactionModal();
+      closeMobileSidebar();
+    });
+  }
 
   txForm.addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -1053,14 +1075,25 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
     }
   });
 
-  // Supplier Add/Edit
-  document.getElementById('btn-open-supplier-modal').addEventListener('click', () => {
+  function openAddSupplierModal() {
     supplierForm.reset();
     document.getElementById('supplier-id').value = '';
     document.getElementById('supplier-modal-title').textContent = 'Register Supplier';
     document.getElementById('supplier-city').value = currentUser ? currentUser.city : 'Peshawar';
     supplierModal.classList.add('active');
-  });
+  }
+
+  const btnOpenSupplierModal = document.getElementById('btn-open-supplier-modal');
+  if (btnOpenSupplierModal) {
+    btnOpenSupplierModal.addEventListener('click', openAddSupplierModal);
+  }
+  const btnSidebarSupplier = document.getElementById('btn-sidebar-supplier');
+  if (btnSidebarSupplier) {
+    btnSidebarSupplier.addEventListener('click', () => {
+      openAddSupplierModal();
+      closeMobileSidebar();
+    });
+  }
 
   function editSupplier(id) {
     const s = suppliersList.find(item => item.id == id);

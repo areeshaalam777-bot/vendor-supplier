@@ -796,6 +796,25 @@ select optgroup {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
+.sidebar-actions-mobile {
+  display: none;
+}
+
+.btn-sidebar-action {
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+  border: 1px solid rgba(179, 200, 207, 0.25);
+  box-shadow: none;
+  transition: var(--transition);
+}
+
+.btn-sidebar-action:hover {
+  background: rgba(179, 200, 207, 0.18);
+  border-color: rgba(255, 255, 255, 0.4);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
 .sidebar-footer {
   padding: 16px;
   border-top: 1px solid rgba(179, 200, 207, 0.15);
@@ -1546,11 +1565,36 @@ tr:hover td {
   .sidebar.mobile-open {
     transform: translateX(0);
   }
+  .topbar-actions {
+    display: none !important;
+  }
+  .sidebar-actions-mobile {
+    display: flex !important;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px 10px 14px 10px;
+    border-bottom: 1px solid rgba(179, 200, 207, 0.15);
+    margin-bottom: 8px;
+  }
+  .sidebar-action-btn {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    padding: 10px 14px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    gap: 10px;
+    border-radius: var(--radius-sm);
+  }
   .main-wrapper {
     width: 100%;
   }
   .topbar {
     padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
   }
   .page-title h2 {
     font-size: 1.15rem;
@@ -1571,29 +1615,15 @@ tr:hover td {
 /* Mobile Screens (max-width: 640px) */
 @media (max-width: 640px) {
   .topbar {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: center;
     gap: 12px;
   }
   .topbar-left {
     width: 100%;
-  }
-  .topbar-actions {
-    width: 100%;
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
-    gap: 8px;
-  }
-  .topbar-actions .btn {
-    padding: 8px 14px;
-    font-size: 0.82rem;
-    white-space: nowrap;
-    flex: 1 1 auto;
-    min-width: max-content;
-  }
-  #btn-open-tx-modal .btn-text {
-    font-size: 0.82rem;
+    gap: 12px;
   }
   .stats-grid {
     grid-template-columns: 1fr 1fr;
@@ -1659,14 +1689,6 @@ tr:hover td {
 @media (max-width: 400px) {
   .stats-grid {
     grid-template-columns: 1fr;
-  }
-  .topbar-actions {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-  }
-  .topbar-actions .btn {
-    width: 100%;
   }
   .actions-cell {
     gap: 4px;
