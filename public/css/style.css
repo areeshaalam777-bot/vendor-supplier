@@ -335,12 +335,17 @@ select optgroup {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  min-width: 44px;
+  height: 44px;
+  padding: 0 8px;
   border-radius: var(--radius-sm);
   font-weight: 800;
-  font-size: 1.15rem;
+  font-size: 1rem;
   box-shadow: var(--shadow-sm);
+  white-space: nowrap;
+  flex-shrink: 0;
+  text-align: center;
+  line-height: 1;
 }
 
 .grade-Aplus { 
@@ -446,8 +451,12 @@ select optgroup {
 }
 
 .dim-row > span:first-child {
-  min-width: 105px;
+  min-width: 96px;
+  max-width: 96px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
 }
 
 .dim-bar-wrap {
@@ -949,9 +958,10 @@ select optgroup {
 /* ==================== Stats Grid ==================== */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 210px), 1fr));
   gap: 18px;
   margin-bottom: 28px;
+  min-width: 0;
 }
 
 .stat-card {
@@ -964,7 +974,8 @@ select optgroup {
   gap: 12px;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
-  overflow: visible;
+  overflow: hidden;
+  min-width: 0;
 }
 
 .stat-card:hover {
@@ -976,13 +987,22 @@ select optgroup {
 
 .stat-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   color: var(--text-secondary);
   font-size: 0.85rem;
   font-weight: 700;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 10px;
+  min-height: 36px;
+}
+
+.stat-header > span {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow-wrap: break-word;
+  word-break: break-word;
+  line-height: 1.35;
+  padding-right: 4px;
 }
 
 .stat-icon {
@@ -994,6 +1014,7 @@ select optgroup {
   justify-content: center;
   font-size: 1.05rem;
   flex-shrink: 0;
+  margin-top: 0;
 }
 
 .stat-icon.primary { 
@@ -1141,13 +1162,14 @@ tr:hover td {
   background: #FFFFFF;
   border: 1.5px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 22px 20px;
+  padding: 20px 20px 16px 20px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   box-shadow: var(--shadow-sm);
   transition: var(--transition);
-  overflow: visible;
+  overflow: hidden;
+  min-width: 0;
   word-break: break-word;
 }
 
@@ -1169,8 +1191,13 @@ tr:hover td {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 16px;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.supplier-box-top > div:first-child {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 /* ==================== Comparison Matrix ==================== */
@@ -1630,14 +1657,25 @@ tr:hover td {
     gap: 10px;
   }
   .stat-card {
-    padding: 14px 16px;
+    padding: 12px 14px;
     gap: 8px;
   }
+  .stat-header {
+    font-size: 0.78rem;
+    gap: 8px;
+    min-height: 30px;
+  }
+  .stat-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 0.9rem;
+    flex-shrink: 0;
+  }
   .stat-value {
-    font-size: 1.35rem;
+    font-size: 1.3rem;
   }
   .stat-header span {
-    font-size: 0.76rem;
+    font-size: 0.75rem;
   }
   .content-card {
     padding: 16px 14px;
@@ -1705,3 +1743,29 @@ tr:hover td {
   }
 }
 
+/* ==================== WhatsApp Link ==================== */
+.whatsapp-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #25D366;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.18s ease, opacity 0.18s ease;
+  white-space: nowrap;
+}
+
+.whatsapp-link i {
+  font-size: 1.05em;
+  flex-shrink: 0;
+}
+
+.whatsapp-link:hover {
+  color: #128C7E;
+  opacity: 0.9;
+  text-decoration: underline;
+}
+
+.whatsapp-link:active {
+  opacity: 0.7;
+}

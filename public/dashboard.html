@@ -488,8 +488,12 @@
         </div>
         <div class="form-row">
           <div class="form-group">
-            <label for="supplier-phone">Phone / WhatsApp *</label>
-            <input type="tel" id="supplier-phone" class="form-control" required placeholder="0312-9844123">
+            <label for="supplier-phone"><i class="fa-brands fa-whatsapp" style="color: #25D366;"></i> WhatsApp Number *</label>
+            <div class="input-with-icon">
+              <i class="fa-brands fa-whatsapp input-icon" style="color: #25D366;"></i>
+              <input type="tel" id="supplier-phone" class="form-control" required placeholder="03XX-XXXXXXX" autocomplete="tel" pattern="[0-9\-\+ ]+" title="Pakistani mobile number e.g. 0312-9844123">
+            </div>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">Must be a valid Pakistani WhatsApp number (e.g. 0312-9844123)</span>
           </div>
           <div class="form-group">
             <label for="supplier-category">Trade Category</label>

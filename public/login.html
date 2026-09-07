@@ -81,8 +81,12 @@
             <input type="text" id="reg-owner-name" class="form-control" placeholder="e.g. Ali Khan">
           </div>
           <div class="form-group">
-            <label for="reg-phone">Phone / WhatsApp</label>
-            <input type="tel" id="reg-phone" class="form-control" placeholder="0300-1234567">
+            <label for="reg-phone"><i class="fa-brands fa-whatsapp" style="color: #25D366;"></i> WhatsApp Number</label>
+            <div class="input-with-icon">
+              <i class="fa-brands fa-whatsapp input-icon" style="color: #25D366;"></i>
+              <input type="tel" id="reg-phone" class="form-control" placeholder="03XX-XXXXXXX" autocomplete="tel" pattern="[0-9\-\+ ]+" title="Pakistani mobile number e.g. 0300-1234567">
+            </div>
+            <span style="font-size: 0.72rem; color: var(--text-muted);">Used to contact you via WhatsApp</span>
           </div>
         </div>
 

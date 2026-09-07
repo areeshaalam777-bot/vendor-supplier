@@ -452,7 +452,7 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
                   <i class="fa-solid fa-location-dot"></i> ${escapeHtml(s.market_area || s.city || 'Wholesale Market')}, ${escapeHtml(s.city || '')}
                 </div>
                 <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">
-                  <i class="fa-solid fa-phone"></i> ${escapeHtml(s.phone)} · <span class="badge badge-category" style="padding: 2px 6px; font-size: 0.7rem;">${escapeHtml(s.category)}</span>
+                  ${whatsappLink(s.phone)} · <span class="badge badge-category" style="padding: 2px 6px; font-size: 0.7rem;">${escapeHtml(s.category)}</span>
                 </div>
               </div>
               <div style="text-align: center;">
@@ -504,24 +504,25 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
             </div>
           </div>
 
-          <div style="margin-top: 16px; padding-top: 12px; border-top: 1px solid var(--border-subtle); display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;">
-            <div style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;">
-              <span>${sc.total_transactions} orders logged</span> · <span class="badge ${riskBadgeClass}" style="font-size: 0.68rem;">${sc.risk_status}</span>
+          <div style="margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border-subtle);">
+            <div style="font-size: 0.73rem; color: var(--text-muted); margin-bottom: 10px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+              <span>${sc.total_transactions} orders logged</span>
+              <span class="badge ${riskBadgeClass}" style="font-size: 0.67rem; padding: 3px 8px;">${sc.risk_status}</span>
             </div>
-            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: nowrap;">
-              <button class="btn-icon btn-timeline-view" data-id="${s.id}" title="Dispute Timeline">
+            <div style="display: flex; gap: 6px; align-items: center; width: 100%;">
+              <button class="btn-icon btn-timeline-view" data-id="${s.id}" title="Dispute Timeline" style="flex-shrink: 0;">
                 <i class="fa-solid fa-clock-rotate-left"></i>
               </button>
-              <button class="btn btn-secondary btn-sm btn-community-view" data-id="${s.id}" title="View Blinded Community Network Score">
-                <i class="fa-solid fa-network-wired" style="color: #818cf8;"></i>
+              <button class="btn-icon btn-community-view" data-id="${s.id}" title="Community Network Score" style="flex-shrink: 0; color: #818cf8;">
+                <i class="fa-solid fa-network-wired"></i>
               </button>
-              <button class="btn btn-emerald btn-sm btn-quick-tx" data-id="${s.id}" title="Log Delivery for this supplier">
+              <button class="btn btn-emerald btn-sm btn-quick-tx" data-id="${s.id}" title="Log Delivery for this supplier" style="flex: 1; justify-content: center;">
                 <i class="fa-solid fa-plus"></i> Log Delivery
               </button>
-              <button class="btn-icon btn-edit-supplier" data-id="${s.id}" title="Edit Supplier">
+              <button class="btn-icon btn-edit-supplier" data-id="${s.id}" title="Edit Supplier" style="flex-shrink: 0;">
                 <i class="fa-solid fa-pen-to-square"></i>
               </button>
-              <button class="btn-icon btn-delete-supplier" data-id="${s.id}" style="color: var(--accent-rose);" title="Delete Supplier">
+              <button class="btn-icon btn-delete-supplier" data-id="${s.id}" style="color: var(--accent-rose); flex-shrink: 0;" title="Delete Supplier">
                 <i class="fa-solid fa-trash"></i>
               </button>
             </div>
@@ -546,7 +547,7 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
         <tr>
           <td>
             <div style="font-weight: 700;">${escapeHtml(s.name)}</div>
-            <div style="font-size: 0.74rem; color: var(--text-muted);">${escapeHtml(s.market_area || s.city || '')} · ${escapeHtml(s.phone)}</div>
+            <div style="font-size: 0.74rem; color: var(--text-muted);">${escapeHtml(s.market_area || s.city || '')} · ${whatsappLink(s.phone)}</div>
           </td>
           <td>
             <div><span class="badge badge-category">${escapeHtml(s.category)}</span></div>
@@ -626,7 +627,7 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
               <span style="font-size: 0.8rem; font-weight: 800; color: #818cf8;">${rankBadge}</span>
               <span>${escapeHtml(s.name)}</span>
             </div>
-            <div style="font-size: 0.72rem; color: var(--text-muted);">${escapeHtml(s.phone)} · ${escapeHtml(s.category)}</div>
+            <div style="font-size: 0.72rem; color: var(--text-muted);">${whatsappLink(s.phone)} · ${escapeHtml(s.category)}</div>
           </td>
           <td>${escapeHtml(s.market_area || 'Market')}, ${escapeHtml(s.city)}</td>
           <td><span style="font-size: 0.8rem; color: var(--text-secondary);">${escapeHtml(s.payment_terms || 'COD')}</span></td>
@@ -1191,9 +1192,20 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
     const id = document.getElementById('supplier-id').value;
     const isEdit = Boolean(id);
 
+    const rawPhone = document.getElementById('supplier-phone').value.trim();
+    if (!isValidPakistaniWhatsApp(rawPhone)) {
+      showToast({
+        title: 'Invalid WhatsApp Number',
+        message: 'Please enter a valid Pakistani WhatsApp number (e.g. 0312-9844123 or 03129844123).',
+        type: 'error'
+      });
+      document.getElementById('supplier-phone').focus();
+      return;
+    }
+
     const payload = {
       name: document.getElementById('supplier-name').value.trim(),
-      phone: document.getElementById('supplier-phone').value.trim(),
+      phone: rawPhone,
       category: document.getElementById('supplier-category').value,
       city: document.getElementById('supplier-city').value,
       market_area: document.getElementById('supplier-market').value.trim(),
@@ -1281,6 +1293,36 @@ document.getElementById('btn-save-settings').addEventListener('click', async () 
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#039;');
+  }
+
+  /**
+   * Convert Pakistani phone number to WhatsApp international format (+92...)
+   */
+  function toWhatsappNumber(phone) {
+    if (!phone) return '';
+    let cleaned = phone.replace(/[^0-9]/g, '');
+    if (cleaned.startsWith('92') && cleaned.length === 12) return cleaned;
+    if (cleaned.startsWith('0') && cleaned.length === 11) return '92' + cleaned.slice(1);
+    if (cleaned.length === 10) return '92' + cleaned;
+    return cleaned;
+  }
+
+  /**
+   * Validate Pakistani mobile number (03xx format)
+   */
+  function isValidPakistaniWhatsApp(phone) {
+    const cleaned = phone.replace(/[^0-9]/g, '');
+    return /^(92)?0?3[0-9]{9}$/.test(cleaned) || /^03[0-9]{9}$/.test(cleaned);
+  }
+
+  /**
+   * Render a clickable WhatsApp link with brand icon
+   */
+  function whatsappLink(phone) {
+    if (!phone) return '<span style="color: var(--text-muted);">—</span>';
+    const waNum = toWhatsappNumber(phone);
+    const displayNum = escapeHtml(phone);
+    return `<a href="https://wa.me/${waNum}" target="_blank" rel="noopener noreferrer" class="whatsapp-link" title="Open WhatsApp chat with ${displayNum}"><i class="fa-brands fa-whatsapp"></i> ${displayNum}</a>`;
   }
 
   function debounce(func, wait) {
