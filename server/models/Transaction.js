@@ -17,5 +17,7 @@ const transactionSchema = new mongoose.Schema({
   amount_pkr: { type: Number, default: 0 },
   created_at: { type: Date, default: Date.now }
 });
+transactionSchema.index({ user_id: 1, supplier_id: 1 });
+transactionSchema.index({ supplier_id: 1 });
 
 module.exports = mongoose.model('Transaction', transactionSchema);

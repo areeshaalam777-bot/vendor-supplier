@@ -206,13 +206,22 @@ router.get('/summary/stats', async (req, res) => {
     const suppliers = await Supplier.find({ user_id: userId }).lean();
     let atRiskCount = 0;
 
-    await Promise.all(suppliers.map(async s => {
-      const sTxs = await Transaction.find({ user_id: userId, supplier_id: s._id }).sort({ actual_date: 1 }).lean();
+    // Group all transactions by supplier
+    const txsBySupplier = {};
+    allTxs.forEach(tx => {
+      const sId = tx.supplier_id.toString();
+      if (!txsBySupplier[sId]) txsBySupplier[sId] = [];
+      txsBySupplier[sId].push(tx);
+    });
+
+    suppliers.forEach(s => {
+      const sTxs = txsBySupplier[s._id.toString()] || [];
+      sTxs.sort((a, b) => new Date(a.actual_date || 0) - new Date(b.actual_date || 0));
       const sc = calculateSupplierScores(sTxs);
       if (sc.risk_status === 'Deteriorating' || sc.composite_score < 60) {
         atRiskCount++;
       }
-    }));
+    });
 
     res.json({
       success: true,

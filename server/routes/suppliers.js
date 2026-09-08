@@ -34,18 +34,32 @@ router.get('/', async (req, res) => {
 
     const rawSuppliers = await Supplier.find(query).sort({ _id: -1 }).lean();
 
+    // Optimize N+1 query: Fetch all transactions for this user once
+    const allTransactions = await Transaction.find({ user_id: userId }).sort({ actual_date: 1 }).lean();
+    
+    // Group transactions by supplier_id
+    const transactionsBySupplier = {};
+    allTransactions.forEach(tx => {
+      const sId = tx.supplier_id.toString();
+      if (!transactionsBySupplier[sId]) {
+        transactionsBySupplier[sId] = [];
+      }
+      transactionsBySupplier[sId].push(tx);
+    });
+
     // Fetch transactions for each supplier and compute reliability metrics
-    const suppliersWithScores = await Promise.all(rawSuppliers.map(async supplier => {
-      const txs = await Transaction.find({ user_id: userId, supplier_id: supplier._id }).sort({ actual_date: 1 }).lean();
+    const suppliersWithScores = rawSuppliers.map(supplier => {
+      const sId = supplier._id.toString();
+      const txs = transactionsBySupplier[sId] || [];
       const scorecard = calculateSupplierScores(txs);
 
       return {
         ...supplier,
-        id: supplier._id.toString(),
+        id: sId,
         scorecard,
         transaction_count: txs.length
       };
-    }));
+    });
 
     // Optional risk filter
     let filtered = suppliersWithScores;
@@ -71,11 +85,25 @@ router.get('/compare/matrix', async (req, res) => {
 
     const suppliers = await Supplier.find(query).lean();
 
-    const comparisonList = await Promise.all(suppliers.map(async s => {
-      const txs = await Transaction.find({ user_id: userId, supplier_id: s._id }).sort({ actual_date: 1 }).lean();
+    // Optimize N+1 query: Fetch all transactions for this user once
+    const allTransactions = await Transaction.find({ user_id: userId }).sort({ actual_date: 1 }).lean();
+    
+    // Group transactions by supplier_id
+    const transactionsBySupplier = {};
+    allTransactions.forEach(tx => {
+      const sId = tx.supplier_id.toString();
+      if (!transactionsBySupplier[sId]) {
+        transactionsBySupplier[sId] = [];
+      }
+      transactionsBySupplier[sId].push(tx);
+    });
+
+    const comparisonList = suppliers.map(s => {
+      const sId = s._id.toString();
+      const txs = transactionsBySupplier[sId] || [];
       const score = calculateSupplierScores(txs);
       return {
-        id: s._id.toString(),
+        id: sId,
         name: s.name,
         phone: s.phone,
         city: s.city,
@@ -98,7 +126,7 @@ router.get('/compare/matrix', async (req, res) => {
         risk_status: score.risk_status,
         total_transactions: score.total_transactions
       };
-    }));
+    });
 
     // Sort by composite score descending
     comparisonList.sort((a, b) => b.composite_score - a.composite_score);

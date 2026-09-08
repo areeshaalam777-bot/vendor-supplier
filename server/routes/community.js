@@ -72,9 +72,31 @@ router.get('/overview', requireAuth, async (req, res) => {
     const groups = await buildCommunityGroups();
     const categoryStats = {};
 
+    // Optimize N+1 query: Fetch all relevant community transactions once
+    const allCommunitySupplierIds = [];
+    for (const key in groups) {
+      allCommunitySupplierIds.push(...groups[key].supplier_record_ids);
+    }
+    
+    const allCommunityTxs = await Transaction.find({ supplier_id: { $in: allCommunitySupplierIds } }).lean();
+    
+    const txsBySupplier = {};
+    allCommunityTxs.forEach(tx => {
+      const sId = tx.supplier_id.toString();
+      if (!txsBySupplier[sId]) txsBySupplier[sId] = [];
+      txsBySupplier[sId].push(tx);
+    });
+
     for (const key of Object.keys(groups)) {
       const group = groups[key];
-      const txs = await Transaction.find({ supplier_id: { $in: group.supplier_record_ids } }).lean();
+      const txs = [];
+      group.supplier_record_ids.forEach(sId => {
+        const stringId = sId.toString();
+        if (txsBySupplier[stringId]) {
+          txs.push(...txsBySupplier[stringId]);
+        }
+      });
+      
       if (txs.length === 0) continue;
 
       const score = calculateSupplierScores(txs);

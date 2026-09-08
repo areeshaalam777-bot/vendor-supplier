@@ -11,5 +11,6 @@ const supplierSchema = new mongoose.Schema({
   notes: { type: String, default: '' },
   created_at: { type: Date, default: Date.now }
 });
+supplierSchema.index({ user_id: 1 });
 
 module.exports = mongoose.model('Supplier', supplierSchema);

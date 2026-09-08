@@ -98,13 +98,24 @@ router.get('/monthly-digest', requireAuth, async (req, res) => {
     const user = await User.findById(userId).lean();
     const suppliers = await Supplier.find({ user_id: userId }).lean();
 
-    const evaluations = await Promise.all(suppliers.map(async s => {
-      const txs = await Transaction.find({ user_id: userId, supplier_id: s._id }).sort({ actual_date: 1 }).lean();
+    // Optimize N+1 query: Fetch all transactions for this user once
+    const allTransactions = await Transaction.find({ user_id: userId }).sort({ actual_date: 1 }).lean();
+    
+    // Group transactions by supplier_id
+    const txsBySupplier = {};
+    allTransactions.forEach(tx => {
+      const sId = tx.supplier_id.toString();
+      if (!txsBySupplier[sId]) txsBySupplier[sId] = [];
+      txsBySupplier[sId].push(tx);
+    });
+
+    const evaluations = suppliers.map(s => {
+      const txs = txsBySupplier[s._id.toString()] || [];
       return {
         supplier_name: s.name,
         scorecard: calculateSupplierScores(txs)
       };
-    }));
+    });
 
     const topPerformer = [...evaluations].sort((a, b) => b.scorecard.composite_score - a.scorecard.composite_score)[0];
     const atRiskList = evaluations.filter(e => e.scorecard.risk_status === 'Deteriorating');
